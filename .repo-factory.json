@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "generator": "Weslley08/repo-factory-starter",
+  "template": "ulanzi-plugin",
+  "git_tag": "template-ulanzi-plugin",
+  "source_issue": "https://github.com/Weslley08/repo-factory-starter/issues/2"
+}

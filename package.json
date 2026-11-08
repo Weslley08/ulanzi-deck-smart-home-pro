@@ -1,0 +1,13 @@
+{
+  "name": "ulanzi-deck-smart-home-pro",
+  "private": false,
+  "version": "0.1.0",
+  "description": "Plugin Ulanzi para controle de casa inteligente.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20"
+  }
+}
