@@ -16,6 +16,6 @@
     "build:plugin": "node scripts/build.mjs"
   },
   "dependencies": {
-    "ws": "8.22.2"
+    "ws": "8.22.1"
   }
 }
