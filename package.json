@@ -5,7 +5,17 @@
   "type": "module",
   "description": "Smart Home PRO plugin for Ulanzi Studio",
   "license": "Apache-2.0",
-  "engines": {"node": ">=20.12.2"},
-  "scripts": {"test": "node --test test/*.test.js", "check": "node --check src/runtime.js && node --check src/ha-provider.js && node --check src/registry.js", "start": "node src/runtime.js", "audit": "npm audit --omit=dev"},
-  "dependencies": {"ws": "8.18.3"}
+  "engines": {
+    "node": ">=20.12.2"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/runtime.js && node --check src/ha-provider.js && node --check src/registry.js",
+    "start": "node src/runtime.js",
+    "audit": "npm audit --omit=dev",
+    "build:plugin": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "ws": "8.18.3"
+  }
 }
