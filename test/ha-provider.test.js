@@ -21,7 +21,7 @@ test('discover and control light using authorized REST endpoint',async()=>{
  assert.equal(calls[1].url,'https://ha.example/api/services/light/turn_on');
  assert.equal(JSON.parse(calls[1].opts.body).entity_id,'light.desk');
  assert.equal(calls[1].opts.headers.Authorization,'Bearer secret');
- assert.throws(()=>provider.execute({entityId:'lock.door',service:'unlock'}),/Unsupported/);
+ await assert.rejects(()=>provider.execute({entityId:'lock.door',service:'unlock'}),/Unsupported/);
  provider.close();
 });
 test('event listeners and provider registration',()=>{
