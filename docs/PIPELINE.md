@@ -2,7 +2,7 @@
 
 Fonte oficial: https://github.com/Weslley08/ulanzi-plugin-pipeline
 
-O repositório usa `.github/workflows/gate.yml` e `delivery.yml`, apontando para os reusable workflows `@v1`. O antigo `ci.yml` independente foi removido.
+O repositório usa `.github/workflows/gate.yml` e `delivery.yml`, apontando para os reusable workflows `@feat/maintainer-approval`. O antigo `ci.yml` independente foi removido.
 
 O fluxo é `feature/*` → `develop` → `release/vX.Y.Z` → `main`.
 A Delivery abre automaticamente PRs de trabalho somente com a GitHub App configurada no repositório (`APP_CLIENT_ID` e `APP_PRIVATE_KEY`). Sem os secrets ela não pode abrir PRs.
@@ -18,3 +18,5 @@ A Delivery abre automaticamente PRs de trabalho somente com a GitHub App configu
 5. Aplicar proteções somente após checagens reais; não declarar proteção como aplicada antes disso.
 
 A publicação também depende de revisão do `docs/VERIFY.md` no equipamento real.
+
+> Referência temporária: a branch `feat/maintainer-approval` corresponde à usada no Clima PRO. A referência `@v1` ainda usa o contrato antigo de `AUTOMATION_TOKEN`. Migrar para `@v1` somente após atualizar e validar essa referência no projeto central.
