@@ -9,14 +9,20 @@
     "node": ">=20.12.2"
   },
   "scripts": {
-    "test": "node --test test/*.test.js",
+    "test": "node --test test",
     "check": "node --check src/runtime.js && node --check src/ha-provider.js && node --check src/registry.js",
     "start": "node src/runtime.js",
     "audit": "npm audit --omit=dev",
     "build:plugin": "node scripts/build.mjs",
     "setup": "npm ci --ignore-scripts && npm ci --prefix com.ulanzi.smarthomepro.ulanziPlugin --ignore-scripts",
     "typecheck": "npm run check",
-    "test:coverage": "node --experimental-test-coverage --test test/*.test.js"
+    "test:coverage": "node --experimental-test-coverage --test test",
+    "package": "node scripts/package.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
+    "check:sdk": "node scripts/check-sdk.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "measure": "node scripts/measure.mjs",
+    "bump": "node scripts/bump.mjs"
   },
   "dependencies": {
     "ws": "8.22.1"
