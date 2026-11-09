@@ -25,6 +25,8 @@ export class HomeAssistantProvider {
     this.nextId = 1;
     this.timer = null;
     this.closed = false;
+    this.retryCount = 0;
+    this.authFailed = false;
   }
   async request(path, options = {}) {
     if (!path.startsWith('/api/')) throw new Error('Invalid API path');
@@ -72,7 +74,7 @@ export class HomeAssistantProvider {
   }
   connect() {
     this.closed = false;
-    if (this.ws) return;
+    if (this.ws || this.authFailed) return;
     const socketUrl = this.origin.replace(/^http/,'ws') + '/api/websocket';
     const ws = new this.WebSocketImpl(socketUrl, {followRedirects:false});
     this.ws = ws;
@@ -80,14 +82,18 @@ export class HomeAssistantProvider {
     ws.on('message', raw => {
       let msg; try { msg = JSON.parse(String(raw)); } catch { return; }
       if (msg.type === 'auth_required') send({type:'auth',access_token:this.token});
-      if (msg.type === 'auth_ok') send({id:this.nextId++,type:'subscribe_events',event_type:'state_changed'});
+      if (msg.type === 'auth_ok') { this.retryCount=0; send({id:this.nextId++,type:'subscribe_events',event_type:'state_changed'}); }
+      if (msg.type === 'auth_invalid') { this.authFailed=true; ws.close(); }
       if (msg.type === 'event' && msg.event?.data?.new_state) this.emit(msg.event.data.new_state);
     });
     ws.on('error',()=>{}); // close event drives retry; never print credentials
     ws.on('close',()=>{
       if(this.ws !== ws) return;
       this.ws = null;
-      if (!this.closed) this.timer = setTimeout(()=>{this.timer=null;this.connect();},5000);
+      if (!this.closed && !this.authFailed) {
+        const wait=Math.min(1000*2**Math.min(this.retryCount++,5),30000);
+        this.timer=setTimeout(()=>{this.timer=null;this.connect();},wait);
+      }
     });
   }
   close() {
