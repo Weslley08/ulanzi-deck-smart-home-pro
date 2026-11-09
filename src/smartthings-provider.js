@@ -34,7 +34,7 @@ export class SmartThingsProvider {
       for(const raw of data.items) {
         const id=raw.deviceId;
         if(!UUID.test(id))continue;
-        const caps=raw.components?.flatMap(c=>c.capabilities?.map(x=>x.id)||[])||[];
+        const caps=raw.components?.find(c=>c.id==='main')?.capabilities?.map(x=>x.id)||[];
         if(!caps.some(c=>SUPPORTED.has(c)))continue;
         const d={id,name:raw.label||raw.name||id,domain:'smartthings',capabilities:caps};
         this.devices.set(id,d);
