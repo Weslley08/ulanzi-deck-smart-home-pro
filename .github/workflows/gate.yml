@@ -26,7 +26,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: Weslley08/ulanzi-plugin-pipeline/.github/workflows/gate.yml@v1
+    uses: Weslley08/ulanzi-plugin-pipeline/.github/workflows/gate.yml@feat/maintainer-approval
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
