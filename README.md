@@ -1,16 +1,38 @@
-# Smart Home Pro
+# Smart Home PRO
 
-Plugin Ulanzi para controle de casa inteligente.
+Plugin de automação residencial para Ulanzi D200, desenvolvido a partir do padrão Clima PRO.
 
-- Repositório: `ulanzi-deck-smart-home-pro`
-- Plugin ID: `com.ulanzi.smarthomepro`
-- Base: padrão Ulanzi PRO (esqueleto inicial)
-- Criado com: `ulanzi-plugin`, pelo [Repo Factory](https://github.com/Weslley08/repo-factory-starter)
-- Procedência técnica: `.repo-factory.json` e Git tag `template-ulanzi-plugin`
+**Status: MVP em desenvolvimento. Não é um release validado em hardware.**
 
-## Importante
-Este é um **scaffold**, não um plugin Ulanzi instalável. Antes de publicar, integre os arquivos oficiais e as configurações reais do SDK V3.1 a partir de uma base validada (por exemplo, Clima PRO), respeitando a licença e sem incluir segredos. Nenhuma API da Ulanzi é presumida aqui.
+## O que já existe
+
+- Adaptador Home Assistant: REST para descobrir entidades e executar comandos permitidos.
+- WebSocket para receber eventos de mudança de estado.
+- Property Inspector para selecionar dispositivo e ação.
+- Ícones de ligado, desligado e offline.
+- Testes iniciais, isolamento de provedores e pipeline de qualidade.
+
+O MVP suporta luzes, tomadas, ventiladores, cortinas, cenas, scripts e input booleans. Comandos críticos (fechaduras, alarmes e portões) ficam fora da primeira versão.
+
+**Não estão implementados:** SmartThings, Tuya/Smart Life, Xiaomi direto, Alexa, Google Home, MQTT, Matter ou Hue. Consulte [a matriz de integrações](docs/INTEGRATIONS.md).
 
 ## Desenvolvimento
 
-Configure o SDK oficial e os scripts de build/teste conforme a base validada. Mantenha testes e políticas de segurança bloqueantes antes de publicar.
+```powershell
+npm install
+npm run check
+npm test
+npm run build:plugin
+```
+
+Para conectar o Home Assistant, configure `HA_URL` e `HA_TOKEN` no ambiente herdado pelo processo do Ulanzi Studio. Consulte [instruções](docs/DEVELOPMENT.md) e [segurança](SECURITY.md). O projeto não foi testado na Ulanzi real nesta branch.
+
+## Repositório e procedência
+
+- Plugin ID: `com.ulanzi.smarthomepro.ulanziPlugin`
+- Inicializado pelo [Repo Factory](https://github.com/Weslley08/repo-factory-starter) usando template `ulanzi-plugin`.
+- Procedência preservada em `.repo-factory.json` e na tag `template-ulanzi-plugin`.
+- Referência arquitetural: [Clima PRO](https://github.com/Weslley08/ulanzi-deck-clima-pro).
+- SDK Ulanzi fornecido conforme o projeto oficial. Verificar licença, atribuições e compatibilidade antes de distribuir.
+
+Nenhuma release automática está habilitada.
