@@ -35,3 +35,4 @@ Consulte [configuração de provedores](docs/DEVELOPMENT.md) e [segurança](SECU
 - SDK Ulanzi baseado na versão utilizada pelo Clima PRO; direitos e avisos de componentes precisam ser verificados antes da distribuição.
 
 Nenhuma release automática foi habilitada.
+
