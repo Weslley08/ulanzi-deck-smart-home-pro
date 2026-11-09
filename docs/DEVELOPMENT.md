@@ -1,0 +1,43 @@
+# Desenvolvimento
+
+Node.js 20.12.2+.
+
+```powershell
+npm install
+npm run check
+npm test
+npm run build:plugin
+```
+
+## Configuração temporária
+
+Em um ambiente local controlado, disponibilize ao processo do Ulanzi Studio somente as credenciais dos provedores usados. Não comite valores nem inclua segredos em perfis exportados.
+
+| Provedor | Ambiente |
+|---|---|
+| Home Assistant | `HA_URL`, `HA_TOKEN` |
+| SmartThings | `SMARTTHINGS_TOKEN` (PAT curta duração para desenvolvimento) |
+| Tuya | `TUYA_CLIENT_ID`, `TUYA_CLIENT_SECRET`, `TUYA_USER_ID`, `TUYA_REGION` (`us`, `eu`, `cn`, `in`) |
+
+Instale a pasta gerada `com.ulanzi.smarthomepro.ulanziPlugin` em `%APPDATA%\Ulanzi\UlanziDeck\Plugins\` e reinicie o Studio. O ambiente do Studio deve herdar as variáveis; variáveis definidas só no terminal de build não bastam.
+
+**Essas variáveis são uma solução temporária de desenvolvimento.** Não distribuir uma release de produção sem armazenamento protegido de credenciais e fluxo de conexão de contas.
+
+## Funcionalidades
+
+Selecione o provedor, atualize a lista, escolha o dispositivo e a ação.
+
+- HA: controle de domínios autorizados; WebSocket entrega mudanças de estado.
+- SmartThings: switches compatíveis; leitura de estado por REST após comando.
+- Tuya: funções booleanas switch reconhecidas; leitura de estado por REST após comando.
+
+O botão não assume sucesso pelo simples recebimento HTTP do comando.
+
+## Limitações
+
+- Nenhuma das integrações cloud foi testada com conta real.
+- A integração SmartThings para usuário final precisa de OAuth 2.0 e infraestrutura autorizada.
+- A integração Tuya exige projeto Cloud e vinculação de conta.
+- Não há push cloud, cenas entre provedores ou deduplicação de dispositivos neste MVP.
+- Os ícones, o empacotamento e a instalação real ainda precisam de validação na Ulanzi D200.
+- Não foi publicada release.

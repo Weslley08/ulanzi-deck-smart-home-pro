@@ -1,0 +1,118 @@
+import UlanziApi from './ulanzi-api/libs/ulanziApi.js';
+import {HomeAssistantProvider} from './ha-provider.js';
+import {SmartThingsProvider} from './smartthings-provider.js';
+import {TuyaProvider} from './tuya-provider.js';
+import {ProviderRegistry} from './registry.js';
+
+// Vendored Ulanzi SDK logs raw inbound messages, including credentials.
+for(const name of ['log','info','debug','warn','error']) console[name]=()=>{};
+const ID='com.ulanzi.smarthomepro.ulanziPlugin';
+const ACTION=ID+'.device';
+class Host extends UlanziApi {
+ send(cmd,params){
+  if(this.websocket?.readyState!==1)return;
+  this.websocket.send(JSON.stringify({cmd,uuid:this.uuid,key:this.key,actionid:this.actionid,...params}));
+ }
+ reconnect(){this.connect(this.uuid,this.port,this.address);}
+}
+const host=new Host();
+const providers=new ProviderRegistry();
+const keys=new Map();
+const ready=new Set();
+function register(id,provider){
+ providers.register(id,provider);
+ provider.subscribe(state=>{
+  for(const [ctx,s] of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);
+ });
+ if(id==='home-assistant')provider.connect();
+ refresh(id);
+}
+async function refresh(id){
+ const p=providers.get(id);
+ if(!p)return;
+ try{
+  await p.discoverDevices();
+  ready.add(id);
+  for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
+ }catch{ready.delete(id);}
+}
+if(process.env.HA_URL&&process.env.HA_TOKEN){
+ try{register('home-assistant',new HomeAssistantProvider({url:process.env.HA_URL,token:process.env.HA_TOKEN}));}catch{}
+}
+if(process.env.SMARTTHINGS_TOKEN){
+ try{register('smartthings',new SmartThingsProvider({token:process.env.SMARTTHINGS_TOKEN}));}catch{}
+}
+if(process.env.TUYA_CLIENT_ID&&process.env.TUYA_CLIENT_SECRET&&process.env.TUYA_USER_ID){
+ try{register('tuya',new TuyaProvider({
+  clientId:process.env.TUYA_CLIENT_ID,secret:process.env.TUYA_CLIENT_SECRET,
+  userId:process.env.TUYA_USER_ID,region:process.env.TUYA_REGION||'us'
+ }));}catch{}
+}
+function normalize(raw){
+ return{
+  providerId:['home-assistant','smartthings','tuya'].includes(raw?.providerId)?raw.providerId:'home-assistant',
+  entityId:typeof raw?.entityId==='string'&&/^[a-zA-Z0-9_.-]{1,128}$/.test(raw.entityId)?raw.entityId:'',
+  service:['toggle','turn_on','turn_off','open_cover','close_cover','stop_cover'].includes(raw?.service)?raw.service:'toggle'
+ };
+}
+function paint(ctx){
+ const s=keys.get(ctx);if(!s)return;
+ const provider=providers.get(s.providerId);
+ const state=provider?.getState(s.entityId);
+ const index=!provider||!s.entityId?3:!state?2:['unavailable','unknown','offline'].includes(state.state)?2:['on','open'].includes(state.state)?1:0;
+ const label=s.entityId?(s.entityId.includes('.')?s.entityId.split('.')[1]:s.entityId).replaceAll('_',' ').slice(0,16):'Configure';
+ host.setStateIcon(ctx,index,label);
+}
+function add(msg){
+ if(msg.uuid!==ACTION)return;
+ keys.set(msg.context,normalize(msg.param));paint(msg.context);
+}
+async function run(msg){
+ if(msg.uuid!==ACTION)return;
+ const ctx=msg.context,s=keys.get(ctx);
+ const provider=s?providers.get(s.providerId):null;
+ if(!provider||!s.entityId||!ready.has(s.providerId)){host.showAlert(ctx);return;}
+ const state=provider.getState(s.entityId);
+ const domain=s.entityId.split('.')[0];
+ let service=s.service;
+ if(service==='toggle'){
+  if(s.providerId==='home-assistant'&&domain==='cover')service=state?.state==='open'?'close_cover':'open_cover';
+  else if(s.providerId==='home-assistant'&&['scene','script'].includes(domain))service='turn_on';
+  else service=state?.state==='on'?'turn_off':'turn_on';
+ }
+ try{
+  await provider.execute({entityId:s.entityId,service});
+  // No optimistic updates; cloud providers refresh only on confirmed server readback.
+  if(s.providerId!=='home-assistant'&&provider.refreshState){
+   setTimeout(()=>{if(keys.get(ctx)===s)provider.refreshState(s.entityId).catch(()=>{});},1500);
+  }
+ }catch{host.showAlert(ctx);}
+}
+host.onAdd(add);
+host.onParamFromApp(add);
+host.onParamFromPlugin(add);
+host.onRun(msg=>{void run(msg);});
+host.onSetActive(msg=>{if(String(msg.active)==='true')paint(msg.context);});
+host.onSendToPlugin(msg=>{
+ const ctx=msg.context,payload=msg.payload;
+ if(payload?.type!=='discover')return;
+ const id=['home-assistant','smartthings','tuya'].includes(payload.providerId)?payload.providerId:'home-assistant';
+ const provider=providers.get(id);
+ const respond=(devices,error)=>host.sendToPropertyInspector({type:'devices',providerId:id,devices,error},ctx);
+ if(!provider){respond([],'This provider is not configured in the plugin environment');return;}
+ provider.discoverDevices().then(devices=>{
+  ready.add(id);
+  for(const [key,s]of keys)if(s.providerId===id)paint(key);
+  respond(devices.filter(d=>id!=='home-assistant'||['light','switch','fan','cover','scene','script','input_boolean'].includes(d.domain))
+   .map(({id,name,domain})=>({id,name,domain})));
+ }).catch(()=>{ready.delete(id);respond([],'Provider connection failed or rate limited');});
+});
+host.onClear(msg=>{for(const item of msg.param??[])keys.delete(item.context);});
+let retry;
+host.onClose(()=>{if(!retry)retry=setTimeout(()=>{retry=null;host.reconnect();},3000);});
+host.onError(()=>{});
+host.onConnected(()=>{for(const ctx of keys.keys())paint(ctx);});
+function shutdown(){clearTimeout(retry);void providers.close();process.exit(0);}
+process.once('SIGINT',shutdown);
+process.once('SIGTERM',shutdown);
+host.connect(ID);

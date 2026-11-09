@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Smart Home PRO</title>
+<link rel="stylesheet" href="../../libs/css/uspi.css"></head>
+<body><div class="uspi-wrapper">
+ <h3>Smart Home PRO</h3>
+ <p id="status" role="status">Choose a configured provider and refresh devices.</p>
+ <form id="property-inspector">
+  <div class="uspi-item"><label class="uspi-item-label" for="providerId">Provider</label>
+   <select class="uspi-item-value" id="providerId" name="providerId">
+    <option value="home-assistant">Home Assistant</option>
+    <option value="smartthings">SmartThings</option>
+    <option value="tuya">Tuya / Smart Life</option>
+   </select>
+  </div>
+  <div class="uspi-item"><label class="uspi-item-label" for="entityId">Device</label>
+   <select class="uspi-item-value" id="entityId" name="entityId"><option value="">Select a device</option></select>
+  </div>
+  <div class="uspi-item"><label class="uspi-item-label" for="service">Action</label>
+   <select class="uspi-item-value" id="service" name="service">
+    <option value="toggle">Toggle</option><option value="turn_on">Turn on</option>
+    <option value="turn_off">Turn off</option>
+    <option value="open_cover">Open cover</option>
+    <option value="close_cover">Close cover</option><option value="stop_cover">Stop cover</option>
+   </select>
+  </div>
+ </form>
+ <button id="refresh" type="button">Refresh devices</button>
+ <p>Device permissions and capabilities differ by provider. SmartThings and Tuya cloud states are refreshed after commands; they are not instant push events.</p>
+ <p>Locks, alarms and other safety-critical operations are excluded.</p>
+</div>
+<script src="../../libs/js/constants.js"></script>
+<script src="../../libs/js/eventEmitter.js"></script>
+<script src="../../libs/js/timers.js"></script>
+<script src="../../libs/js/utils.js"></script>
+<script src="../../libs/js/ulanziApi.js"></script>
+<script src="./inspector.js"></script></body></html>

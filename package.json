@@ -1,13 +1,21 @@
 {
   "name": "ulanzi-deck-smart-home-pro",
-  "private": false,
   "version": "0.1.0",
-  "description": "Plugin Ulanzi para controle de casa inteligente.",
-  "scripts": {
-    "test": "node --test test/*.test.mjs"
-  },
-  "devDependencies": {},
+  "private": false,
+  "type": "module",
+  "description": "Smart Home PRO plugin for Ulanzi Studio",
+  "license": "Apache-2.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.12.2"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check src/runtime.js && node --check src/ha-provider.js && node --check src/registry.js",
+    "start": "node src/runtime.js",
+    "audit": "npm audit --omit=dev",
+    "build:plugin": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "ws": "8.22.2"
   }
 }
