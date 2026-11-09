@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   delivery:
-    uses: Weslley08/ulanzi-plugin-pipeline/.github/workflows/delivery.yml@v1
+    uses: Weslley08/ulanzi-plugin-pipeline/.github/workflows/delivery.yml@feat/maintainer-approval
     with:
       # Publishing stays off until the maintainer sets this repository variable to true.
       publishing: ${{ vars.PUBLISHING_ENABLED }}
