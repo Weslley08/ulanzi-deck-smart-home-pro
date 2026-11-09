@@ -13,7 +13,10 @@
     "check": "node --check src/runtime.js && node --check src/ha-provider.js && node --check src/registry.js",
     "start": "node src/runtime.js",
     "audit": "npm audit --omit=dev",
-    "build:plugin": "node scripts/build.mjs"
+    "build:plugin": "node scripts/build.mjs",
+    "setup": "npm ci --ignore-scripts && npm ci --prefix com.ulanzi.smarthomepro.ulanziPlugin --ignore-scripts",
+    "typecheck": "npm run check",
+    "test:coverage": "node --experimental-test-coverage --test test/*.test.js"
   },
   "dependencies": {
     "ws": "8.22.1"
