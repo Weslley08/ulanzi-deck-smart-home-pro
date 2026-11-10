@@ -45,3 +45,11 @@ test('credential labels are addressable when provider reports missing variables'
  assert.match(js,/l\.id='label-'\+key/);
  assert.match(js,/get\('label-'\+key\)\.hidden/);
 });
+
+test('DPAPI streams are attached to the PowerShell child, never the host process',()=>{
+ const store=read('src/credential-store.js');
+ assert.match(store,/child\.stdout\.on\('data'/);
+ assert.match(store,/child\.on\('close'/);
+ assert.match(store,/child\.stdin\.end\(input/);
+ assert.doesNotMatch(store,/process\.stdin\.end|process\.stdout\.on|process\.on\('close'/);
+});
