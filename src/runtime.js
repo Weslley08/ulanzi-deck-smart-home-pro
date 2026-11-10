@@ -187,11 +187,19 @@ async function run(msg){
   // state is updated only after a GET confirms the expected state.
   if(s.providerId!=='home-assistant'&&provider.refreshState){
    const expected=service==='turn_on'?'on':service==='turn_off'?'off':null;
-   if(expected)await confirmState({
-    provider:s.providerId,entityId:s.entityId,expected,
-    refresh:id=>provider.refreshState(id),
-    read:id=>provider.getState(id),log:record
-   });
+   if(expected){
+    const confirmed=await confirmState({
+     provider:s.providerId,entityId:s.entityId,expected,
+     refresh:id=>provider.refreshState(id),
+     read:id=>provider.getState(id),
+     log:(event,fields)=>{
+      record(event,fields);
+      if(event==='state_poll_rate_limited')commands.rateLimit(s.providerId);
+     }
+    });
+    // The API may accept a command which the device never applies.
+    if(!confirmed)host.showAlert(ctx);
+   }
   }
  };
  try{
