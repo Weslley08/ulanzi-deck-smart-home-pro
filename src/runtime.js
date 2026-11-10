@@ -114,6 +114,12 @@ async function authorize(ctx,id,credentials,{remember=false,source='session'}={}
     await saveCredentials(id,{...environmentCredentials(id),...Object.fromEntries(Object.entries(clean).filter(([,v])=>v.trim()))});
     persistedConnections.add(id);
    }catch{persistenceError=true;}
+  }else if(persistedConnections.has(id)){
+   // Switching to session-only explicitly removes old saved credentials.
+   try{
+    await clearCredentials(id);
+    persistedConnections.delete(id);
+   }catch{persistenceError=true;}
   }
   report(ctx,id,'auth-status',{
    connected:true,source:remember&&!persistenceError?'protected':source,
