@@ -16,8 +16,9 @@ No SmartThings e na Tuya, o `POST` que executa um comando significa **aceitaçã
 
 No Windows, os logs JSONL ficam em:
 
-`%LOCALAPPDATA%\Ulanzi\SmartHomePRO\logs\smart-home.jsonl`
+`%APPDATA%\Ulanzi\UlanziDeck\logs\com.ulanzi.smarthomepro.ulanziPlugin\smart-home.jsonl`
 
+- O diretório é criado automaticamente na primeira gravação; nenhuma configuração manual é necessária. Logs anteriores em `%LOCALAPPDATA%` não são apagados ou migrados automaticamente.
 - Cada linha inclui timestamp, evento, provedor e duração (milissegundos); um hash curto do identificador de dispositivo permite correlacionar ações sem expor o ID original.
 - Exemplos de eventos: `button_pressed`, `command_started`, `command_accepted`, `command_suppressed`, `state_confirmed`, `state_confirmation_timeout`, `provider_rate_limited`.
 - Sem tokens, senhas, URLs da conta, payloads, cabeçalhos ou nomes de dispositivos.
