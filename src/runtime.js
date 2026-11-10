@@ -3,6 +3,8 @@ import {HomeAssistantProvider} from './ha-provider.js';
 import {SmartThingsProvider} from './smartthings-provider.js';
 import {TuyaProvider} from './tuya-provider.js';
 import {ProviderRegistry} from './registry.js';
+import {CommandGuard,confirmState} from './control-guard.js';
+import {record} from './diagnostics.js';
 
 // Vendored Ulanzi SDK logs raw inbound messages, including credentials.
 for(const name of ['log','info','debug','warn','error']) console[name]=()=>{};
@@ -27,6 +29,7 @@ const host=new Host();
 const providers=new ProviderRegistry();
 const keys=new Map();
 const ready=new Set();
+const commands=new CommandGuard({log:record});
 function register(id,provider){
  providers.register(id,provider);
  provider.subscribe(state=>{
@@ -154,22 +157,47 @@ function add(msg){
 async function run(msg){
  if(!ACTIONS[msg.uuid]&&msg.uuid!==ACTION)return;
  const ctx=msg.context,s=keys.get(ctx);
- const provider=s?providers.get(s.providerId):null;
+ if(!s)return;
+ const provider=providers.get(s.providerId);
  if(!provider||!s.entityId||!ready.has(s.providerId)){host.showAlert(ctx);return;}
- const state=provider.getState(s.entityId);
- const domain=s.entityId.split('.')[0];
- let service=s.service;
- if(service==='toggle'){
-  if(s.providerId==='home-assistant'&&domain==='cover')service=state?.state==='open'?'close_cover':'open_cover';
-  else if(s.providerId==='home-assistant'&&['scene','script'].includes(domain))service='turn_on';
-  else service=state?.state==='on'?'turn_off':'turn_on';
- }
- try{
-  await provider.execute({entityId:s.entityId,service});
-  // No optimistic updates; cloud providers refresh only on confirmed server readback.
-  if(s.providerId!=='home-assistant'&&provider.refreshState){
-   setTimeout(()=>{if(keys.get(ctx)===s)provider.refreshState(s.entityId).catch(()=>{});},1500);
+ record('button_pressed',{provider:s.providerId,device:s.entityId});
+ // Execute from one lock per provider+physical device. Other buttons that
+ // control the same device cannot generate parallel POSTs.
+ const operation=async()=>{
+  const state=provider.getState(s.entityId);
+  const domain=s.entityId.split('.')[0];
+  let service=s.service;
+  if(service==='toggle'){
+   if(s.providerId==='home-assistant'&&domain==='cover')service=state?.state==='open'?'close_cover':'open_cover';
+   else if(s.providerId==='home-assistant'&&['scene','script'].includes(domain))service='turn_on';
+   else service=state?.state==='on'?'turn_off':'turn_on';
   }
+  const started=Date.now();
+  record('command_started',{provider:s.providerId,device:s.entityId});
+  try{
+   await provider.execute({entityId:s.entityId,service});
+   record('command_accepted',{provider:s.providerId,device:s.entityId,elapsedMs:Date.now()-started});
+  }catch(e){
+   if(/rate limit|429/i.test(String(e?.message)))commands.rateLimit(s.providerId);
+   record('command_failed',{provider:s.providerId,device:s.entityId,elapsedMs:Date.now()-started});
+   throw e;
+  }
+  // The cloud may accept the command before the physical device changes.
+  // Bounded polling avoids making more API calls than necessary. The visual
+  // state is updated only after a GET confirms the expected state.
+  if(s.providerId!=='home-assistant'&&provider.refreshState){
+   const expected=service==='turn_on'?'on':service==='turn_off'?'off':null;
+   if(expected)await confirmState({
+    provider:s.providerId,entityId:s.entityId,expected,
+    refresh:id=>provider.refreshState(id),
+    read:id=>provider.getState(id),log:record
+   });
+  }
+ };
+ try{
+  const result=await commands.run(s.providerId,s.entityId,operation);
+  // Rapid duplicates are intentionally ignored rather than building a queue.
+  if(!result.accepted&&result.reason==='rate_limited')host.showAlert(ctx);
  }catch{host.showAlert(ctx);}
 }
 host.onAdd(add);
@@ -219,7 +247,7 @@ let retry;
 host.onClose(()=>{if(!retry)retry=setTimeout(()=>{retry=null;host.reconnect();},3000);});
 host.onError(()=>{});
 host.onConnected(()=>{for(const ctx of keys.keys())paint(ctx);});
-function shutdown(){clearTimeout(retry);void providers.close();process.exit(0);}
+function shutdown(){clearTimeout(retry);commands.close();void providers.close();process.exit(0);}
 process.once('SIGINT',shutdown);
 process.once('SIGTERM',shutdown);
 host.connect(ID);
