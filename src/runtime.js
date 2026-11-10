@@ -14,7 +14,7 @@ const ACTIONS=Object.freeze({
  [ID+'.tuya']:'tuya'
 });
 const PROVIDER_IDS=new Set(Object.values(ACTIONS));
-const sessionConnections=new Map();
+const sessionConnections=new Set();
 class Host extends UlanziApi {
  send(cmd,params){
   if(this.websocket?.readyState!==1)return;
@@ -32,6 +32,7 @@ function register(id,provider){
   for(const [ctx,s] of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);
  });
  if(id==='home-assistant')provider.connect();
+ sessionConnections.add(id);
  void refresh(id);
 }
 async function refresh(id){
@@ -68,12 +69,12 @@ async function authorize(ctx,id,credentials){
   candidate=createProvider(id,clean);
   const devices=await candidate.discoverDevices(); // Validate before declaring success.
   const previous=providers.get(id);
-  if(previous)previous.close();
   providers.replace(id,candidate);
+  if(previous)previous.close();
   candidate.subscribe(state=>{for(const [ctx,s] of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);});
   if(id==='home-assistant')candidate.connect();
   ready.add(id);
-  sessionConnections.set(id,true);
+  sessionConnections.add(id);
   for(const [key,s] of keys)if(s.providerId===id)paint(key);
   report(ctx,id,'auth-status',{connected:true,devices:filterDevices(id,devices)});
  }catch{
@@ -84,6 +85,22 @@ async function authorize(ctx,id,credentials){
 function filterDevices(id,devices){
  return devices.filter(d=>id!=='home-assistant'||['light','switch','fan','cover','scene','script','input_boolean'].includes(d.domain))
   .map(({id,name,domain})=>({id,name,domain}));
+}
+// Existing development environment variables are recognized automatically.
+// They do not get copied into action settings, and the Property Inspector only
+// receives connection status, never values.
+const envConfigs=[
+ ['home-assistant',['HA_URL','HA_TOKEN'],()=>({url:process.env.HA_URL,token:process.env.HA_TOKEN})],
+ ['smartthings',['SMARTTHINGS_TOKEN'],()=>({token:process.env.SMARTTHINGS_TOKEN})],
+ ['tuya',['TUYA_CLIENT_ID','TUYA_CLIENT_SECRET','TUYA_USER_ID'],()=>({
+  clientId:process.env.TUYA_CLIENT_ID,secret:process.env.TUYA_CLIENT_SECRET,
+  userId:process.env.TUYA_USER_ID,region:process.env.TUYA_REGION||'us'
+ })]
+];
+for(const [id,needed,load] of envConfigs){
+ if(needed.every(name=>typeof process.env[name]==='string'&&process.env[name].trim())){
+  try{register(id,createProvider(id,load()));}catch{sessionConnections.delete(id);}
+ }
 }
 function normalize(raw){
  return{
@@ -139,7 +156,7 @@ host.onSendToPlugin(msg=>{
  const id=ACTIONS[msg.uuid]||(msg.uuid===ACTION?payload?.providerId:null);
  if(!PROVIDER_IDS.has(id))return;
  if(payload?.type==='auth-status'){
-  report(ctx,id,'auth-status',{connected:sessionConnections.has(id)});
+  report(ctx,id,'auth-status',{connected:sessionConnections.has(id),source:envConfigs.find(([p,fields])=>p===id&&fields.every(k=>process.env[k]?.trim()))?'environment':'session'});
   return;
  }
  if(payload?.type==='authenticate'){
