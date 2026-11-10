@@ -20,7 +20,6 @@ const PROVIDER_IDS=new Set(Object.values(ACTIONS));
 const sessionConnections=new Set();
 const invalidEnvironments=new Set();
 const loadingCredentials=new Set();
-const authQueue=new Map();
 const persistedConnections=new Set();
 class Host extends UlanziApi {
  send(cmd,params){
@@ -152,35 +151,41 @@ for(const [id,needed,load] of envConfigs){
 async function restoreProvider(id){
  if(loadingCredentials.has(id))return;
  loadingCredentials.add(id);
+ let problem=null;
  try{
   const saved=await loadCredentials(id);
   if(!saved)return;
   persistedConnections.add(id);
-  if(sessionConnections.has(id))return; // existing valid environment wins
+  if(sessionConnections.has(id))return;
   const candidate=createProvider(id,saved);
   try{
    await candidate.discoverDevices();
+   // Do not overwrite a newer connection installed while storage was loading.
+   if(sessionConnections.has(id)){candidate.close();return;}
    const old=providers.get(id);
    providers.replace(id,candidate);
    old?.close();
    candidate.subscribe(state=>{for(const [ctx,s]of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);});
    if(id==='home-assistant')candidate.connect();
    ready.add(id);sessionConnections.add(id);
-   for(const [ctx,s]of keys)if(s.providerId===id){
-    paint(ctx);report(ctx,id,'auth-status',{connected:true,source:'protected',persisted:true});
-   }
   }catch{
    candidate.close();
-   for(const [ctx,s]of keys)if(s.providerId===id)report(ctx,id,'auth-status',{
-    connected:false,persisted:true,error:'Saved authorization expired or provider unavailable. Reconnect to update it.'
-   });
+   problem='Saved authorization expired or provider unavailable. Reconnect to update it.';
   }
  }catch{
-  for(const [ctx,s]of keys)if(s.providerId===id)report(ctx,id,'auth-status',{
-   connected:false,error:'Windows could not read saved credentials. Reconnect to replace them.'
-  });
+  problem='Windows could not read saved credentials. Reconnect to replace them.';
  }finally{
   loadingCredentials.delete(id);
+  for(const [ctx,s]of keys)if(s.providerId===id){
+   paint(ctx);
+   report(ctx,id,'auth-status',{
+    connected:sessionConnections.has(id),
+    source:sessionConnections.has(id)?'protected':'session',
+    persisted:persistedConnections.has(id),
+    missingFields:environmentFields(id),
+    ...(problem?{error:problem}:{})
+   });
+  }
  }
 }
 for(const id of PROVIDER_IDS)void restoreProvider(id);
