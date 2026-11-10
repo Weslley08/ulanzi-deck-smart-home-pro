@@ -43,8 +43,17 @@ async function refresh(id){
   invalidEnvironments.delete(id);
   sessionConnections.add(id);
   ready.add(id);
-  for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
- }catch{ready.delete(id);sessionConnections.delete(id);invalidEnvironments.add(id);}
+  for(const [ctx,s]of keys)if(s.providerId===id){
+   paint(ctx);
+   report(ctx,id,'auth-status',{connected:true,source:'environment'});
+  }
+ }catch{
+  ready.delete(id);sessionConnections.delete(id);invalidEnvironments.add(id);
+  for(const [ctx,s]of keys)if(s.providerId===id)report(ctx,id,'auth-status',{
+   connected:false,missingFields:envConfigs.find(([p])=>p===id)?.[1]||[],
+   error:'Configured environment credentials were rejected or provider is unreachable.'
+  });
+ }
 }
 // Authentication arrives via the SDK's transient sendToPlugin channel, NEVER via
 // per-key saved settings. Secrets are process-memory-only until Studio exits.
