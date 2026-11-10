@@ -4,7 +4,7 @@ import {SmartThingsProvider} from './smartthings-provider.js';
 import {TuyaProvider} from './tuya-provider.js';
 import {ProviderRegistry} from './registry.js';
 import {CommandGuard,confirmState} from './control-guard.js';
-import {record} from './diagnostics.js';
+import {record,configureStudioLogger} from './diagnostics.js';
 import {saveCredentials,loadCredentials,clearCredentials} from './credential-store.js';
 
 // Vendored Ulanzi SDK logs raw inbound messages, including credentials.
@@ -29,6 +29,7 @@ class Host extends UlanziApi {
  reconnect(){this.connect(this.uuid,this.port,this.address);}
 }
 const host=new Host();
+configureStudioLogger(host);
 const providers=new ProviderRegistry();
 const keys=new Map();
 const ready=new Set();
