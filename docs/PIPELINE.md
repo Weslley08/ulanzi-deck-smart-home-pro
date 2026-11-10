@@ -12,7 +12,7 @@ A Delivery abre automaticamente PRs de trabalho somente com a GitHub App configu
 **Para o mantenedor:**
 
 1. Instalar a GitHub App de automação no repositório e configurar os secrets `APP_CLIENT_ID` e `APP_PRIVATE_KEY` (não reutilizar o segredo da conta de usuário).
-2. Deixar `PUBLISHING_ENABLED` vazio ou `false` até testar D200.
+2. Não usar `PUBLISHING_ENABLED`: a pipeline atual não recebe esse input. Bloquear merge de `release/*` na `main` até a verificação no dispositivo físico e a aprovação do mantenedor.
 3. Implementar scripts faltantes e garantir Gate e CodeQL reportando de fato.
 4. Executar `node scripts/setup-repo.mjs Weslley08/ulanzi-deck-smart-home-pro --dry-run` a partir do repositório central.
 5. Aplicar proteções somente após checagens reais; não declarar proteção como aplicada antes disso.

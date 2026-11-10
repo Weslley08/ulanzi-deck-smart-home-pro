@@ -29,10 +29,7 @@ concurrency:
 
 jobs:
   delivery:
-    uses: Weslley08/ulanzi-plugin-pipeline/.github/workflows/delivery.yml@feat/maintainer-approval
-    with:
-      # Publishing stays off until the maintainer sets this repository variable to true.
-      publishing: ${{ vars.PUBLISHING_ENABLED }}
+    uses: Weslley08/ulanzi-plugin-pipeline/.github/workflows/delivery.yml@fix/restore-publishing-workflow-input
     secrets:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
