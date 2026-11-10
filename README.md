@@ -14,7 +14,7 @@ Plugin de automação residencial para Ulanzi D200, seguindo os padrões do [Cli
 
 Os três provedores são selecionáveis no Property Inspector. O botão representa o estado recebido ou consultado, sem presumir sucesso ao enviar o comando.
 
-**Planejados:** Xiaomi Home, Alexa, Google Home, MQTT, Matter, Philips Hue. Alguns ecossistemas têm restrições de APIs; consulte [matriz de integrações](docs/INTEGRATIONS.md).
+**Planejados / em pesquisa:** Xiaomi Home, MQTT, Matter e Philips Hue. **Google Home e Amazon Alexa são acessíveis somente por entidades, scripts e serviços configurados no Home Assistant**, quando suportados pelo nosso provider HA. O plugin não solicita login Google/Amazon, não cria conexões diretas e não envia comandos fora do Home Assistant para esses dois ecossistemas. Consulte a [matriz de integrações](docs/INTEGRATIONS.md).
 
 ## Desenvolvimento
 
