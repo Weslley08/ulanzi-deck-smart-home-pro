@@ -26,6 +26,8 @@ const configs={
 const get=id=>document.getElementById(id);
 const state={connected:false,loading:false,saved:{entityId:'',service:'toggle'}};
 let pending=0;
+let requiredFields=null;
+const envFieldNames={HA_URL:'url',HA_TOKEN:'token',SMARTTHINGS_TOKEN:'token',TUYA_CLIENT_ID:'clientId',TUYA_CLIENT_SECRET:'secret',TUYA_USER_ID:'userId',TUYA_REGION:'region'};
 function status(message){get('status').textContent=message;}
 if(!providerId){
  get('heading').textContent='Unsupported action';
@@ -47,6 +49,13 @@ if(!providerId){
   }
   input.id='credential-'+key;
   fields.append(input);
+ }
+}
+function showRequiredFields(){
+ for(const [key] of configs[providerId]||[]){
+  const needed=!requiredFields||requiredFields.has(key);
+  get('credential-'+key).hidden=!needed;
+  get('label-'+key).hidden=!needed;
  }
 }
 function credentials(){
@@ -106,7 +115,7 @@ if(providerId){
  $UD.onParamFromPlugin(readSaved);
  get('connect').addEventListener('click',()=>{
   const values=credentials();
-  const missing=(configs[providerId]||[]).filter(([key])=>!values[key]).map(([key,label])=>label);
+  const missing=(configs[providerId]||[]).filter(([key])=>(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
   if(missing.length){status('Required: '+missing.join(', '));return;}
   status('Validating credentials and contacting provider...');
   $UD.sendToPlugin({type:'authenticate',credentials:values});
@@ -120,6 +129,12 @@ if(providerId){
   const p=msg?.payload;
   if(!p||p.providerId!==providerId)return;
   if(p.type==='auth-status'){
+   if(Array.isArray(p.missingFields)){
+    requiredFields=new Set(p.missingFields.map(x=>envFieldNames[x]).filter(Boolean));
+    // If all environment fields are present but validation fails, runtime
+    // sends all required fields so credentials may be replaced manually.
+    showRequiredFields();
+   }
    setConnected(p.connected,p.source);
    if(p.error){status(p.error);return;}
    status(p.connected?'Connected. Choose a device.':'Enter credentials to connect.');
