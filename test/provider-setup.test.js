@@ -19,7 +19,7 @@ test('catalog contains only provider actions with branded icons',()=>{
 });
 test('credential fields are sent only through transient channel, not saved settings',()=>{
  const inspector=text('com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/provider/provider.js');
- assert.match(inspector,/sendToPlugin\(\{type:'authenticate',credentials:values\}\)/);
+ assert.match(inspector,/sendToPlugin\(\{type:'authenticate',credentials:values,remember:get\('remember-credentials'\)\.checked\}\)/);
  assert.match(inspector,/sendParamFromPlugin\(state\.saved\)/);
  assert.doesNotMatch(inspector,/sendParamFromPlugin\([^)]*credentials/);
  assert.match(inspector,/Missing|Required:/);

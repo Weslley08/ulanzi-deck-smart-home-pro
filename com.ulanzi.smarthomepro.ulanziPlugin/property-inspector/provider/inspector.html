@@ -5,7 +5,12 @@
 <style>
 .uspi-wrapper{padding:12px;max-width:600px} .panel{padding:12px;border:1px solid #565d67;border-radius:8px;margin:8px 0 14px}
 .panel input,.panel select{width:100%;box-sizing:border-box;margin:5px 0 12px;padding:7px}
-.panel button{padding:9px;margin:5px 5px 5px 0} #device-settings[hidden],#connect-settings[hidden]{display:none}
+.panel button{padding:10px 12px;margin:0;min-height:38px;box-sizing:border-box}
+.help-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:12px 0}
+.help-actions button{width:100%;max-width:100%;display:block;white-space:normal;overflow-wrap:break-word;line-height:1.4;text-align:center;font:inherit}
+#connect,#refresh,#disconnect{width:100%;margin:8px 0}
+.credential-pref{display:flex;align-items:flex-start;gap:8px;margin:8px 0;font-size:12px;line-height:1.5}
+.credential-pref input{width:auto;flex:0 0 auto;margin:2px 0} #device-settings[hidden],#connect-settings[hidden]{display:none}
 .status{margin:8px 0;font-size:12px} .note{font-size:11px;opacity:.8}
 </style></head>
 <body><div class="uspi-wrapper">
@@ -14,12 +19,15 @@
 <div class="panel" id="connect-settings">
  <h4>1 — Connect provider</h4>
  <p class="note">Primeira vez? Consulte o guia da integração antes de inserir credenciais.</p>
- <button id="setup-guide" type="button">Como configurar esta integração</button>
- <button id="official-portal" type="button">Abrir site oficial</button>
+ <div class="help-actions">
+  <button id="setup-guide" type="button">Como configurar esta integração</button>
+  <button id="official-portal" type="button">Abrir site oficial</button>
+ </div>
  <p class="note">O guia será aberto no GitHub pelo navegador. Requer acesso à internet; não envia suas credenciais.</p>
  <div id="fields"></div>
+ <label class="credential-pref" for="remember-credentials"><input id="remember-credentials" type="checkbox" checked> Lembrar credenciais neste Windows (criptografadas para meu usuário)</label>
  <button id="connect" type="button">Test and connect</button>
- <p class="note">Credentials are held in memory for this Studio session. They are not saved in deck profiles. Closing Studio requires reconnecting unless environment variables are configured.</p>
+ <p class="note">Suas credenciais não entram nos perfis da Ulanzi. Com a opção acima, o Windows as protege por usuário para reconexão após reiniciar o Studio; desmarque para usar somente nesta sessão. Desconectar também apaga as credenciais salvas.</p>
 </div>
 <div class="panel">
  <strong id="connection-status" role="status">Checking connection...</strong>
