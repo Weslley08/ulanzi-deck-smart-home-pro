@@ -5,26 +5,26 @@
 | Home Assistant | MVP REST + WebSocket | Pendente | Ambiente HA_URL / HA_TOKEN |
 | SmartThings | MVP REST (discovery, estado, switch) | Pendente | PAT temporário SMARTTHINGS_TOKEN; OAuth de produção pendente |
 | Tuya / Smart Life | MVP REST (assinatura, discovery, switch) | Pendente | Projeto Tuya, UID vinculado, região e cotas |
-| Xiaomi Home | Pesquisa | Pendente | Preferir integração oficial Xiaomi via HA |
+| Xiaomi Home | Exclusivamente via Home Assistant | Dependente das entidades e serviços expostos no HA | Sem API cloud Xiaomi, miIO/MIoT LAN, login ou tokens Xiaomi no plugin |
 | Amazon Alexa | Exclusivamente via Home Assistant | Dependente das entidades e serviços expostos no HA | Sem conexão, login, Skill ou SDK da Alexa no plugin |
 | Google Home | Exclusivamente via Home Assistant | Dependente das entidades e serviços expostos no HA | Sem conexão, login, SDK ou aplicativo Google no plugin |
 | MQTT | Planejado | Pendente | Credenciais e broker seguro |
 | Matter | Pesquisa | Pendente | Controlador compatível |
 | Philips Hue | Planejado | Pendente | Bridge e chave autorizada |
 
-## Google Home e Amazon Alexa — exclusivamente por Home Assistant
+## Xiaomi Home, Google Home e Amazon Alexa — exclusivamente por Home Assistant
 
-**Decisão de arquitetura:** o Smart Home PRO não cria integrações diretas para Google Home ou Amazon Alexa. O único ponto de entrada e execução aceito pelo plugin para esses ecossistemas é a **integração Home Assistant já existente**.
+**Decisão de arquitetura:** o Smart Home PRO não cria integrações diretas para Xiaomi Home, Google Home ou Amazon Alexa. O único ponto de entrada e execução aceito pelo plugin para esses três ecossistemas é a **integração Home Assistant já existente**.
 
-- **Descoberta:** listar somente as entidades que o Home Assistant expõe e que o provider HA do plugin suporta. Não consultar contas Google/Amazon nem tentar importar automaticamente a lista de dispositivos de suas aplicações.
+- **Descoberta:** listar somente as entidades que o Home Assistant expõe e que o provider HA do plugin suporta. Não consultar contas Xiaomi/Google/Amazon nem tentar importar automaticamente a lista de dispositivos de suas aplicações.
 - **Comandos:** enviar apenas requisições autenticadas à API oficial do **Home Assistant** (serviços, scripts ou automações configurados e autorizados nele). Se o HA encaminhar ações aos provedores, isso é responsabilidade da configuração do HA, não uma conexão do plugin.
 - **Estado:** mostrar somente os estados recebidos/confirmados pelo Home Assistant. Nunca assumir que uma ação enviada por uma automação alterou o dispositivo físico.
-- **Credenciais:** o plugin não solicita, armazena nem utiliza credenciais ou tokens Google/Amazon; mantém apenas a autorização HA já prevista.
-- **Sem componentes externos:** não desenvolver cliente direto Google Home APIs, aplicativo Android/iOS, ponte Windows–celular, Alexa Skill, Alexa Routines Custom Triggers, navegação automatizada nem endpoints privados para controlar dispositivos desses ecossistemas.
-- **Interface:** não adicionar opções "Conectar Alexa" ou "Conectar Google Home"; selecionar as entidades e ações disponíveis pelo provedor Home Assistant.
-- **Limite de compatibilidade:** dispositivos, serviços e automações indisponíveis no HA continuam indisponíveis no plugin. A presença de Google Home ou Alexa na residência não implica acesso automático a todos os seus dispositivos.
+- **Credenciais:** o plugin não solicita, armazena nem utiliza credenciais ou tokens Xiaomi/Google/Amazon; mantém apenas a autorização HA já prevista.
+- **Sem componentes externos:** não desenvolver cliente direto Xiaomi Cloud/MIoT/miIO, Google Home APIs, aplicativo Android/iOS, ponte Windows–celular, Alexa Skill, Alexa Routines Custom Triggers, navegação automatizada nem endpoints privados para controlar dispositivos desses ecossistemas.
+- **Interface:** não adicionar opções "Conectar Xiaomi", "Conectar Alexa" ou "Conectar Google Home"; selecionar as entidades e ações disponíveis pelo provedor Home Assistant.
+- **Limite de compatibilidade:** dispositivos, serviços e automações indisponíveis no HA continuam indisponíveis no plugin. A presença de Xiaomi Home, Google Home ou Alexa na residência não implica acesso automático a todos os seus dispositivos.
 
-**Backlog:** nenhuma integração direta Google/Alexa. Eventuais melhorias devem ocorrer na experiência do provider Home Assistant (descoberta de entidades suportadas, seleção de scripts/cenas e feedback de estado), sem executar comandos em canais paralelos ao HA.
+**Backlog:** nenhuma integração direta Xiaomi/Google/Alexa. Eventuais melhorias devem ocorrer na experiência do provider Home Assistant (descoberta de entidades suportadas, seleção de scripts/cenas e feedback de estado), sem executar comandos em canais paralelos ao HA.
 
 ## SmartThings
 
