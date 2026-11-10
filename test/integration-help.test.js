@@ -14,16 +14,21 @@ test('each integration has an offline HTML help page with steps and official res
   assert.doesNotMatch(html,/secret=|access_token=/i);
  }
 });
-test('provider inspector exposes help and opens fixed paths with Ulanzi SDK',()=>{
+test('provider inspector opens fixed hosted HTTPS guides',()=>{
  const ui=read('provider/inspector.html');
  const js=read('provider/provider.js');
  for(const id of ['setup-guide','official-portal']){
-  assert.match(ui,new RegExp('id="'+id+'"'));
-  assert.match(js,new RegExp("get\\('"+id+"'\\)\\.addEventListener"));
+  assert.ok(ui.includes('id="'+id+'"'));
+  assert.ok(js.includes("get('"+id+"').addEventListener"));
  }
- for(const provider of providers)assert.ok(js.includes('./property-inspector/help/'+provider+'.html'));
- assert.match(js,/\$UD\.openUrl\(localGuides\[providerId\],true\)/);
- assert.match(js,/\$UD\.openUrl\(officialPortals\[providerId\],false\)/);
+ for(const guide of ['HOME_ASSISTANT','SMARTTHINGS','TUYA_SMART_LIFE']){
+  assert.ok(js.includes('/blob/develop/docs/setup/'+guide+'.md'));
+  const md=readFileSync('docs/setup/'+guide+'.md','utf8');
+  assert.ok(md.includes('## Passo a passo'));
+ }
+ assert.ok(js.includes('$UD.openUrl(hostedGuides[providerId],false)'));
+ assert.ok(js.includes('$UD.openUrl(officialPortals[providerId],false)'));
+ assert.ok(!js.includes('localGuides'));
 });
 test('package includes bundled help because it is in allowed Property Inspector tree',()=>{
  const pack=readFileSync('scripts/package.mjs','utf8');
