@@ -11,7 +11,16 @@ const ALLOWED=new Set([
 ]);
 const SAFE_FIELDS=new Set(['provider','reason','attempt','elapsedMs','delayMs','httpStatus']);
 const MAX_BYTES=2*1024*1024;
-const root=join(process.env.LOCALAPPDATA||join(homedir(),'.local','share'),'Ulanzi','SmartHomePRO','logs');
+// Keep diagnostics beside the Studio's own logs rather than in LOCALAPPDATA.
+// Never include user-controlled names or provider values in directory parts.
+export const PLUGIN_ID='com.ulanzi.smarthomepro.ulanziPlugin';
+export function resolveLogDirectory({appData=process.env.APPDATA,home=homedir(),platform=process.platform}={}){
+ const roaming=appData||(
+  platform==='win32'?join(home,'AppData','Roaming'):join(home,'.config')
+ );
+ return join(roaming,'Ulanzi','UlanziDeck','logs',PLUGIN_ID);
+}
+const root=resolveLogDirectory();
 const file=join(root,'smart-home.jsonl');
 let pending=Promise.resolve(),initialized=false;
 function sanitize(event,fields){
