@@ -1,32 +1,119 @@
 {
-  "Author":"Weslley08",
-  "Name":"Smart Home PRO",
-  "Description":"Control supported Home Assistant devices from your Ulanzi deck.",
-  "Version":"0.1.0",
-  "Category":"Smart Home",
-  "UUID":"com.ulanzi.smarthomepro.ulanziPlugin",
-  "Icon":"resources/plugin.svg",
-  "CategoryIcon":"resources/plugin.svg",
-  "Type":"JavaScript",
-  "CodePath":"plugin/app.js",
-  "Actions":[{
-    "Name":"Device Control",
-    "UUID":"com.ulanzi.smarthomepro.ulanziPlugin.device",
-    "Icon":"resources/plugin.svg",
-    "PropertyInspectorPath":"property-inspector/device/inspector.html",
-    "Tooltip":"Operate a supported Home Assistant device",
-    "state":0,
-    "States":[
-      {"Name":"Off","Image":"resources/off.svg"},
-      {"Name":"On","Image":"resources/on.svg"},
-      {"Name":"Offline","Image":"resources/offline.svg"},
-      {"Name":"Not configured","Image":"resources/offline.svg"}
-    ],
-    "DisableAutomaticStates":true,
-    "SupportedInMultiActions":false,
-    "Controllers":["Keypad"],
-    "Devices":[]
-  }],
-  "OS":[{"Platform":"windows","MinimumVersion":"10"}],
-  "Software":{"MinVersion":"3.0.11"}
+  "Author": "Weslley08",
+  "Name": "Smart Home PRO",
+  "Description": "Control Home Assistant, SmartThings, and Tuya devices with per-provider setup",
+  "Version": "0.1.0",
+  "Category": "Smart Home",
+  "UUID": "com.ulanzi.smarthomepro.ulanziPlugin",
+  "Icon": "resources/plugin.svg",
+  "CategoryIcon": "resources/plugin.svg",
+  "Type": "JavaScript",
+  "CodePath": "plugin/app.js",
+  "Actions": [
+    {
+      "Name": "Home Assistant",
+      "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.home-assistant",
+      "Icon": "resources/brand-home-assistant.svg",
+      "PropertyInspectorPath": "property-inspector/provider/inspector.html",
+      "Tooltip": "Configure Home Assistant connection and control a device",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Off",
+          "Image": "resources/off.svg"
+        },
+        {
+          "Name": "On",
+          "Image": "resources/on.svg"
+        },
+        {
+          "Name": "Offline",
+          "Image": "resources/offline.svg"
+        },
+        {
+          "Name": "Not configured",
+          "Image": "resources/offline.svg"
+        }
+      ],
+      "DisableAutomaticStates": true,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "SmartThings",
+      "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.smartthings",
+      "Icon": "resources/brand-smartthings.svg",
+      "PropertyInspectorPath": "property-inspector/provider/inspector.html",
+      "Tooltip": "Configure SmartThings connection and control a device",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Off",
+          "Image": "resources/off.svg"
+        },
+        {
+          "Name": "On",
+          "Image": "resources/on.svg"
+        },
+        {
+          "Name": "Offline",
+          "Image": "resources/offline.svg"
+        },
+        {
+          "Name": "Not configured",
+          "Image": "resources/offline.svg"
+        }
+      ],
+      "DisableAutomaticStates": true,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Tuya / Smart Life",
+      "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.tuya",
+      "Icon": "resources/brand-tuya.svg",
+      "PropertyInspectorPath": "property-inspector/provider/inspector.html",
+      "Tooltip": "Configure Tuya / Smart Life connection and control a device",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Off",
+          "Image": "resources/off.svg"
+        },
+        {
+          "Name": "On",
+          "Image": "resources/on.svg"
+        },
+        {
+          "Name": "Offline",
+          "Image": "resources/offline.svg"
+        },
+        {
+          "Name": "Not configured",
+          "Image": "resources/offline.svg"
+        }
+      ],
+      "DisableAutomaticStates": true,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    }
+  ],
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinVersion": "3.0.11"
+  }
 }

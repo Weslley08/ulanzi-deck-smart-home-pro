@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Home PRO — Provider setup</title>
+<link rel="stylesheet" href="../../libs/css/uspi.css">
+<style>
+/* Ulanzi SDK base CSS hides native checkboxes and styles only .uspi-item-value.
+   This scoped theme overrides those defaults without altering the shared SDK. */
+:root {
+  --sh-surface:#202125;
+  --sh-input:#17191d;
+  --sh-border:#44494f;
+  --sh-text:#f4f6f8;
+  --sh-muted:#b3b9c1;
+  --sh-accent:#00e9dd;
+}
+html,body {width:100%;min-width:0;overflow-x:hidden;color:var(--sh-text);background:transparent}
+.uspi-wrapper {
+  width:100%;max-width:100%;min-width:0;
+  padding:12px 14px 24px;margin:0;
+  font-size:13px;line-height:1.45;
+}
+.uspi-wrapper *, .uspi-wrapper *::before, .uspi-wrapper *::after {box-sizing:border-box}
+.uspi-wrapper h3 {font-size:15px;line-height:1.4;margin:0 0 12px}
+.uspi-wrapper h4 {font-size:13px;font-weight:650;line-height:1.4;margin:0 0 12px}
+.uspi-wrapper .panel {
+  width:100%;min-width:0;margin:12px 0;padding:14px;
+  border:1px solid var(--sh-border);border-radius:10px;
+  background:var(--sh-surface);
+}
+.uspi-wrapper .note {font-size:12px;line-height:1.5;color:var(--sh-muted);margin:10px 0;opacity:1;overflow-wrap:anywhere}
+.uspi-wrapper #fields {min-width:0}
+.uspi-wrapper #fields label, .uspi-wrapper #device-settings label:not(.credential-pref) {
+  display:block;width:auto;font-size:12px;line-height:1.45;font-weight:550;
+  color:var(--sh-text);margin:12px 0 6px;overflow-wrap:anywhere;
+}
+.uspi-wrapper input:not([type="checkbox"]), .uspi-wrapper select {
+  display:block;width:100%;min-width:0;max-width:100%;height:38px;
+  padding:8px 10px;margin:0 0 10px;
+  background:var(--sh-input)!important;color:var(--sh-text)!important;
+  border:1px solid var(--sh-border)!important;border-radius:6px;
+  font:inherit;line-height:1.3;
+}
+.uspi-wrapper input::placeholder {color:#9299a3;opacity:1}
+.uspi-wrapper select option {background:var(--sh-input);color:var(--sh-text)}
+.uspi-wrapper input:focus-visible,.uspi-wrapper select:focus-visible,
+.uspi-wrapper button:focus-visible {
+  outline:2px solid var(--sh-accent)!important;outline-offset:2px;
+}
+.uspi-wrapper button {
+  display:block;width:100%;max-width:100%;min-height:40px;height:auto;
+  padding:10px 12px;margin:0;background:transparent;
+  border:1px solid var(--sh-accent);border-radius:8px;
+  color:var(--sh-accent);font:inherit;font-weight:600;
+  text-align:center;line-height:1.4;white-space:normal;overflow-wrap:anywhere;
+}
+.uspi-wrapper button:hover {background:rgba(0,233,221,.09)}
+.uspi-wrapper button:disabled {cursor:not-allowed;opacity:.55}
+.help-actions {display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:12px 0}
+.help-actions button {width:100%;max-width:100%;white-space:normal}
+.uspi-wrapper .credential-pref {
+  display:flex;align-items:flex-start;gap:10px;min-width:0;
+  margin:14px 0 12px;font-size:12px;line-height:1.45;font-weight:400;
+  color:var(--sh-text);cursor:pointer;overflow-wrap:anywhere;
+}
+.uspi-wrapper .credential-pref input[type="checkbox"] {
+  /* uspi.css uses display:none for all checkboxes; undo that explicitly. */
+  display:block!important;appearance:auto!important;-webkit-appearance:checkbox!important;
+  flex:0 0 17px;width:17px!important;height:17px!important;
+  min-width:17px;max-width:17px;margin:0;padding:0;
+  accent-color:var(--sh-accent);cursor:pointer;
+}
+#connect,#refresh,#disconnect {width:100%;margin:8px 0}
+#connection-status {display:block;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+#device-settings[hidden],#connect-settings[hidden],.uspi-wrapper [hidden]{display:none!important}
+.uspi-wrapper .status {font-size:12px;line-height:1.5;margin:12px 0;color:var(--sh-muted);overflow-wrap:anywhere}
+@media(max-width:340px) {
+ .uspi-wrapper{padding:8px 10px 20px}
+ .uspi-wrapper .panel{padding:10px}
+}
+</style></head>
+<body><div class="uspi-wrapper">
+<h3 id="heading">Smart Home PRO</h3>
+<p class="note">1. Connect account • 2. Discover devices • 3. Choose action</p>
+<div class="panel" id="connect-settings">
+ <h4>1 — Connect provider</h4>
+ <p class="note">Primeira vez? Consulte o guia da integração antes de inserir credenciais.</p>
+ <div class="help-actions">
+  <button id="setup-guide" type="button">Como configurar esta integração</button>
+  <button id="official-portal" type="button">Abrir site oficial</button>
+ </div>
+ <p class="note">O guia será aberto no GitHub pelo navegador. Requer acesso à internet; não envia suas credenciais.</p>
+ <div id="fields"></div>
+ <label class="credential-pref" for="remember-credentials"><input id="remember-credentials" type="checkbox" checked><span>Lembrar credenciais neste Windows <small>(protegidas para meu usuário)</small></span></label>
+ <button id="connect" type="button">Test and connect</button>
+ <p class="note">Suas credenciais não entram nos perfis da Ulanzi. Com a opção acima, o Windows as protege por usuário para reconexão após reiniciar o Studio; desmarque para usar somente nesta sessão. Desconectar também apaga as credenciais salvas.</p>
+</div>
+<div class="panel">
+ <strong id="connection-status" role="status">Checking connection...</strong>
+ <button id="disconnect" type="button" hidden>Disconnect</button>
+</div>
+<div class="panel" id="device-settings" hidden>
+ <h4>2 — Device and action</h4>
+ <label for="entityId">Device</label><select id="entityId"><option value="">Select a device</option></select>
+ <button id="refresh" type="button">Refresh devices</button>
+ <label for="service">Action</label>
+ <select id="service">
+ <option value="toggle">Toggle on/off</option>
+ <option value="turn_on">Turn on</option>
+ <option value="turn_off">Turn off</option>
+ <option value="open_cover">Open cover</option>
+ <option value="close_cover">Close cover</option>
+ <option value="stop_cover">Stop cover</option>
+ </select>
+</div>
+<p id="status" role="status" class="status"></p>
+</div>
+<script src="../../libs/js/constants.js"></script>
+<script src="../../libs/js/eventEmitter.js"></script>
+<script src="../../libs/js/timers.js"></script>
+<script src="../../libs/js/utils.js"></script>
+<script src="../../libs/js/ulanziApi.js"></script>
+<script src="./provider.js"></script>
+</body></html>
