@@ -9,6 +9,18 @@ npm test
 npm run build:plugin
 ```
 
+## Fluxo atual de configuração (branch feature/provider-first-setup)
+
+No catálogo de ações do Studio há três opções independentes:
+**Home Assistant**, **SmartThings** e **Tuya / Smart Life**.
+A ação anterior **Device Control** permanece por compatibilidade.
+
+Ao abrir o painel, o plugin verifica se há uma sessão conectada e se existem variáveis de ambiente válidas para o provedor. Se a autenticação já foi validada, mostra a lista de dispositivos; se há dados faltando, mostra apenas os campos ausentes. Também é possível preencher credenciais diretamente no painel, sem definir variáveis no Windows. A verificação efetua descoberta real antes de marcar **Connected**.
+
+**Persistência:** a configuração do botão (dispositivo e ação) é salva, mas credenciais introduzidas pelo painel são **somente de sessão**. Fechar o Ulanzi Studio as elimina. Não usar os parâmetros salvos por botão ou as configurações globais do Studio como cofre de tokens. Não distribuir como release pública sem armazenamento seguro e autenticação oficial por provedor.
+
+A descoberta LAN automática é apenas proposta técnica: veja [PROVIDER_SETUP_AND_LAN.md](PROVIDER_SETUP_AND_LAN.md). O Home Assistant aceita HTTPS na rede, mas HTTP no IP privado não é aceito pela implementação atual por causa da exposição do token em texto claro.
+
 ## Configuração temporária
 
 Em um ambiente local controlado, disponibilize ao processo do Ulanzi Studio somente as credenciais dos provedores usados. Não comite valores nem inclua segredos em perfis exportados.
