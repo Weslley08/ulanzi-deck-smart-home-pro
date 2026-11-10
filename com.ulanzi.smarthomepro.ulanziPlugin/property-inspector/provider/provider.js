@@ -49,7 +49,7 @@ if(!providerId){
  get('heading').textContent='Smart Home PRO — '+names[providerId];
  const fields=get('fields');
  for(const [key,label,type,placeholder] of configs[providerId]){
-  const l=document.createElement('label');l.htmlFor='credential-'+key;l.textContent=label;fields.append(l);
+  const l=document.createElement('label');l.id='label-'+key;l.htmlFor='credential-'+key;l.textContent=label;fields.append(l);
   let input;
   if(type==='select'){
    input=document.createElement('select');
