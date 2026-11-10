@@ -43,13 +43,13 @@ function dpapi(mode,input){
    if(error)reject(error);else resolve(output);
   }
   child.stdout.setEncoding('utf8');
-  process.stdout.on('data',chunk=>{stdout+=chunk;if(stdout.length>MAX_SIZE*3)process.kill();});
+  child.stdout.on('data',chunk=>{stdout+=chunk;if(stdout.length>MAX_SIZE*3)child.kill();});
   // Discard diagnostic stderr; PowerShell can disclose input in error messages.
   child.stderr.resume();
   child.on('error',()=>finish(new Error('Windows credential protection unavailable')));
-  process.on('close',code=>code===0?finish(null,stdout.trim()):finish(new Error('Windows credential protection failed')));
+  child.on('close',code=>code===0?finish(null,stdout.trim()):finish(new Error('Windows credential protection failed')));
   child.stdin.on('error',()=>{});
-  process.stdin.end(input,'utf8');
+  child.stdin.end(input,'utf8');
  });
 }
 export async function saveCredentials(provider,credentials){
