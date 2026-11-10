@@ -32,7 +32,6 @@ function register(id,provider){
   for(const [ctx,s] of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);
  });
  if(id==='home-assistant')provider.connect();
- sessionConnections.add(id);
  void refresh(id);
 }
 async function refresh(id){
@@ -40,9 +39,10 @@ async function refresh(id){
  if(!p)return;
  try{
   await p.discoverDevices();
+  sessionConnections.add(id);
   ready.add(id);
   for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
- }catch{ready.delete(id);}
+ }catch{ready.delete(id);sessionConnections.delete(id);}
 }
 // Authentication arrives via the SDK's transient sendToPlugin channel, NEVER via
 // per-key saved settings. Secrets are process-memory-only until Studio exits.
