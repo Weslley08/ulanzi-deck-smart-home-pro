@@ -10,8 +10,9 @@ const PROVIDERS=new Set(['home-assistant','smartthings','tuya']);
 const root=join(process.env.LOCALAPPDATA||join(homedir(),'AppData','Local'),'Ulanzi','SmartHomePRO','credentials');
 const MAX_SIZE=16384;
 const commands={
- protect:`Add-Type -AssemblyName System.Security
-$ErrorActionPreference='Stop'
+ protect:`$ErrorActionPreference='Stop'
+Add-Type -AssemblyName System.Security
+[Console]::OutputEncoding=[System.Text.Encoding]::UTF8
 $raw=[Console]::In.ReadToEnd()
 $data=[System.Text.Encoding]::UTF8.GetBytes($raw)
 $out=[System.Security.Cryptography.ProtectedData]::Protect($data,$null,[System.Security.Cryptography.DataProtectionScope]::CurrentUser)
