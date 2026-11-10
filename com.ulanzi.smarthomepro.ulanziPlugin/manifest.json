@@ -11,41 +11,9 @@
   "CodePath": "plugin/app.js",
   "Actions": [
     {
-      "Name": "Device Control",
-      "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.device",
-      "Icon": "resources/plugin.svg",
-      "PropertyInspectorPath": "property-inspector/device/inspector.html",
-      "Tooltip": "Operate a supported Home Assistant device",
-      "state": 0,
-      "States": [
-        {
-          "Name": "Off",
-          "Image": "resources/off.svg"
-        },
-        {
-          "Name": "On",
-          "Image": "resources/on.svg"
-        },
-        {
-          "Name": "Offline",
-          "Image": "resources/offline.svg"
-        },
-        {
-          "Name": "Not configured",
-          "Image": "resources/offline.svg"
-        }
-      ],
-      "DisableAutomaticStates": true,
-      "SupportedInMultiActions": false,
-      "Controllers": [
-        "Keypad"
-      ],
-      "Devices": []
-    },
-    {
       "Name": "Home Assistant",
       "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.home-assistant",
-      "Icon": "resources/plugin.svg",
+      "Icon": "resources/brand-home-assistant.svg",
       "PropertyInspectorPath": "property-inspector/provider/inspector.html",
       "Tooltip": "Configure Home Assistant connection and control a device",
       "state": 0,
@@ -77,7 +45,7 @@
     {
       "Name": "SmartThings",
       "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.smartthings",
-      "Icon": "resources/plugin.svg",
+      "Icon": "resources/brand-smartthings.svg",
       "PropertyInspectorPath": "property-inspector/provider/inspector.html",
       "Tooltip": "Configure SmartThings connection and control a device",
       "state": 0,
@@ -109,7 +77,7 @@
     {
       "Name": "Tuya / Smart Life",
       "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.tuya",
-      "Icon": "resources/plugin.svg",
+      "Icon": "resources/brand-tuya.svg",
       "PropertyInspectorPath": "property-inspector/provider/inspector.html",
       "Tooltip": "Configure Tuya / Smart Life connection and control a device",
       "state": 0,

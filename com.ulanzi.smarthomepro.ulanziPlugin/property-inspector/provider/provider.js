@@ -23,6 +23,17 @@ const configs={
   ['region','Cloud region','select','us']
  ]
 };
+// Fixed, reviewed destinations only — never derive external URLs from account input.
+const officialPortals=Object.freeze({
+ 'home-assistant':'https://www.home-assistant.io/docs/authentication/',
+ 'smartthings':'https://account.smartthings.com/tokens',
+ 'tuya':'https://platform.tuya.com/'
+});
+const localGuides=Object.freeze({
+ 'home-assistant':'./property-inspector/help/home-assistant.html',
+ 'smartthings':'./property-inspector/help/smartthings.html',
+ 'tuya':'./property-inspector/help/tuya.html'
+});
 const get=id=>document.getElementById(id);
 const state={connected:false,loading:false,saved:{entityId:'',service:'toggle'}};
 let pending=0;
@@ -113,6 +124,13 @@ if(providerId){
  $UD.onAdd(readSaved);
  $UD.onParamFromApp(readSaved);
  $UD.onParamFromPlugin(readSaved);
+ get('setup-guide').addEventListener('click',()=>{
+  // The SDK openUrl API accepts plugin-root-relative local HTML paths.
+  $UD.openUrl(localGuides[providerId],true);
+ });
+ get('official-portal').addEventListener('click',()=>{
+  $UD.openUrl(officialPortals[providerId],false);
+ });
  get('connect').addEventListener('click',()=>{
   const values=credentials();
   const missing=(configs[providerId]||[]).filter(([key])=>(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);

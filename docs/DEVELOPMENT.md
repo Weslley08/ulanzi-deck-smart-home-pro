@@ -13,7 +13,7 @@ npm run build:plugin
 
 No catálogo de ações do Studio há três opções independentes:
 **Home Assistant**, **SmartThings** e **Tuya / Smart Life**.
-A ação anterior **Device Control** permanece por compatibilidade.
+A ação antiga **Device Control** foi removida do catálogo de novas ações. O runtime ainda reconhece seu identificador para reduzir impactos em perfis antigos; para configurações novas, utilize uma das três ações específicas.
 
 Ao abrir o painel, o plugin verifica se há uma sessão conectada e se existem variáveis de ambiente válidas para o provedor. Se a autenticação já foi validada, mostra a lista de dispositivos; se há dados faltando, mostra apenas os campos ausentes. Também é possível preencher credenciais diretamente no painel, sem definir variáveis no Windows. A verificação efetua descoberta real antes de marcar **Connected**.
 
@@ -53,3 +53,14 @@ O botão não assume sucesso pelo simples recebimento HTTP do comando.
 - Não há push cloud, cenas entre provedores ou deduplicação de dispositivos neste MVP.
 - Os ícones, o empacotamento e a instalação real ainda precisam de validação na Ulanzi D200.
 - Não foi publicada release.
+
+## Ajuda integrada para cada provedor
+
+A ação Home Assistant, SmartThings ou Tuya / Smart Life mostra dois botões no painel de propriedades:
+
+- **Como configurar esta integração:** abre um guia HTML local, dentro do pacote instalado, com os passos e observações de segurança.
+- **Abrir site oficial:** abre o portal/documentação de autorização na plataforma do provedor.
+
+Os arquivos estão em `com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/help/` e acompanham o ZIP de distribuição. As URLs são fixas e revisadas, não derivadas de credenciais ou dados do dispositivo. O guia pode ser consultado antes da autenticação, mesmo sem dispositivos detectados.
+
+O SmartThings PAT serve para desenvolvimento e tem validade de 24 horas. Tuya requer projeto Cloud, vínculo da conta por QR Code e UID. Home Assistant requer token de longa duração e, para um host não-loopback, URL HTTPS. Nenhuma senha, token ou Client Secret deve ser informado nos links de ajuda.
