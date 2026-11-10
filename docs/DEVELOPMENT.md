@@ -58,9 +58,9 @@ O botão não assume sucesso pelo simples recebimento HTTP do comando.
 
 A ação Home Assistant, SmartThings ou Tuya / Smart Life mostra dois botões no painel de propriedades:
 
-- **Como configurar esta integração:** abre um guia HTML local, dentro do pacote instalado, com os passos e observações de segurança.
+- **Como configurar esta integração:** abre a página Markdown do respectivo provedor no GitHub, usando HTTPS e o navegador padrão.
 - **Abrir site oficial:** abre o portal/documentação de autorização na plataforma do provedor.
 
-Os arquivos estão em `com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/help/` e acompanham o ZIP de distribuição. As URLs são fixas e revisadas, não derivadas de credenciais ou dados do dispositivo. O guia pode ser consultado antes da autenticação, mesmo sem dispositivos detectados.
+Os guias editáveis ficam em `docs/setup/` no repositório (branch `develop`). As URLs são HTTPS e fixas, não contêm credenciais, tokens ou informações do dispositivo. A ajuda precisa de internet, mas pode ser consultada antes da autenticação. Os antigos HTML locais permanecem apenas como artefatos legados, sem serem abertos pelo painel. A documentação pode ser atualizada no GitHub sem reinstalar o plugin.
 
 O SmartThings PAT serve para desenvolvimento e tem validade de 24 horas. Tuya requer projeto Cloud, vínculo da conta por QR Code e UID. Home Assistant requer token de longa duração e, para um host não-loopback, URL HTTPS. Nenhuma senha, token ou Client Secret deve ser informado nos links de ajuda.
