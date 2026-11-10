@@ -87,7 +87,7 @@ function setConnected(value,source=''){
  get('device-settings').hidden=!value;
  get('connect-settings').hidden=value;
  get('disconnect').hidden=!value;
- get('connection-status').textContent=value?'Connected'+(source==='environment'?' (environment)':' (session)'):'Not connected — enter credentials first';
+ get('connection-status').textContent=value?'Conectado'+(source==='environment'?' (ambiente)':source==='protected'?' (salvo com proteção do Windows)':' (sessão)'):'Não conectado — informe as credenciais';
  if(!value){
   get('entityId').replaceChildren(new Option('Connect to list devices',''));
  }
@@ -136,8 +136,8 @@ if(providerId){
   const missing=(configs[providerId]||[]).filter(([key])=>(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
   if(missing.length){status('Required: '+missing.join(', '));return;}
   status('Validating credentials and contacting provider...');
-  $UD.sendToPlugin({type:'authenticate',credentials:values});
-  clearCredentials();
+  $UD.sendToPlugin({type:'authenticate',credentials:values,remember:get('remember-credentials').checked});
+  // Keep the input until validation succeeds. Failed attempts must not erase it.
  });
  get('disconnect').addEventListener('click',()=>{$UD.sendToPlugin({type:'disconnect'});});
  get('refresh').addEventListener('click',refresh);
@@ -153,9 +153,11 @@ if(providerId){
     // sends all required fields so credentials may be replaced manually.
     showRequiredFields();
    }
+   if(p.restoring&&!p.connected){status('Restaurando conexão protegida do Windows...');return;}
    setConnected(p.connected,p.source);
    if(p.error){status(p.error);return;}
-   status(p.connected?'Connected. Choose a device.':'Enter credentials to connect.');
+   if(p.connected)clearCredentials();
+   status(p.notice|| (p.connected?'Conectado. Selecione um dispositivo.':'Informe as credenciais para conectar.'));
    if(Array.isArray(p.devices))showDevices(p.devices);
    else if(p.connected)refresh();
   }
