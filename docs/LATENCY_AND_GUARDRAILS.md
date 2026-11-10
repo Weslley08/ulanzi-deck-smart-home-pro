@@ -12,17 +12,30 @@ No SmartThings e na Tuya, o `POST` que executa um comando significa **aceitaçã
 - Estado cloud confirmado por leituras com atrasos controlados após a aceitação: **450 ms, 900 ms, 1.600 ms e 2.500 ms**. A leitura para ao confirmar. Máximo de quatro GETs de confirmação por comando, sem loop infinito.
 - Após erro de autenticação, timeouts de rede ou estado não confirmado, o botão avisa que houve falha em vez de mostrar sucesso falso. Os erros não podem disparar uma tempestade de comandos.
 
-## Logs locais
+## Logs via SDK oficial Ulanzi V3.1
 
-No Windows, os logs JSONL ficam em:
+O Smart Home PRO **não escreve arquivos de log próprios**. Em vez disso, envia eventos
+estruturados (JSON curto) através de `host.logMessage(mensagem, nível)`, API do
+SDK oficial Ulanzi. O Studio decide onde e como persistir as mensagens.
 
-`%LOCALAPPDATA%\Ulanzi\SmartHomePRO\logs\smart-home.jsonl`
+Níveis usados: `debug` (cliques e comandos suprimidos), `info` (aceitação e confirmação)
+e `warn`/`error` (falhas, timeouts e limites da API).
 
-- Cada linha inclui timestamp, evento, provedor e duração (milissegundos); um hash curto do identificador de dispositivo permite correlacionar ações sem expor o ID original.
-- Exemplos de eventos: `button_pressed`, `command_started`, `command_accepted`, `command_suppressed`, `state_confirmed`, `state_confirmation_timeout`, `provider_rate_limited`.
-- Sem tokens, senhas, URLs da conta, payloads, cabeçalhos ou nomes de dispositivos.
-- Rotação local quando o arquivo ultrapassa **2 MiB**; o arquivo anterior recebe sufixo `.previous`.
-- Logs são para diagnóstico, não para upload automático, métricas remotas nem telemetria sem consentimento.
+No Windows, procure os logs do Ulanzi Studio sob
+`%APPDATA%\\Ulanzi\\UlanziDeck\\logs`, usando o UUID
+`com.ulanzi.smarthomepro.ulanziPlugin` para identificar o plugin.
+**O caminho e o nome exatos do arquivo pertencem ao Studio e podem variar com a versão**.
+Não pressupor arquivo `smart-home.jsonl` nem subpasta própria.
+
+- Cada evento contém tipo, provedor, duração em milissegundos quando disponível e
+  hash reduzido do identificador do dispositivo, não seu ID completo.
+- Não são registrados tokens, senhas, URLs, payloads da API, cabeçalhos ou nomes dos dispositivos.
+- Eventos iguais são limitados a um por janela de 60 segundos, com contagem de repetições
+  relatada quando o mesmo evento ocorrer novamente depois da janela.
+- O número de chaves de deduplicação é limitado a 128, evitando crescimento indefinido.
+- Não há upload automático ou telemetria remota. O Studio gerencia persistência e rotação.
+- Logs antigos da implementação JSONL podem permanecer no computador. O plugin não os exclui
+  nem move automaticamente.
 
 ### Como avaliar a demora
 
