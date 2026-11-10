@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Home PRO — Provider setup</title>
+<link rel="stylesheet" href="../../libs/css/uspi.css">
+<style>
+.uspi-wrapper{padding:12px;max-width:600px} .panel{padding:12px;border:1px solid #565d67;border-radius:8px;margin:8px 0 14px}
+.panel input,.panel select{width:100%;box-sizing:border-box;margin:5px 0 12px;padding:7px}
+.panel button{padding:9px;margin:5px 5px 5px 0} #device-settings[hidden],#connect-settings[hidden]{display:none}
+.status{margin:8px 0;font-size:12px} .note{font-size:11px;opacity:.8}
+</style></head>
+<body><div class="uspi-wrapper">
+<h3 id="heading">Smart Home PRO</h3>
+<p class="note">1. Connect account • 2. Discover devices • 3. Choose action</p>
+<div class="panel" id="connect-settings">
+ <h4>1 — Connect provider</h4>
+ <div id="fields"></div>
+ <button id="connect" type="button">Test and connect</button>
+ <p class="note">Credentials are held in memory for this Studio session. They are not saved in deck profiles. Closing Studio requires reconnecting unless environment variables are configured.</p>
+</div>
+<div class="panel">
+ <strong id="connection-status" role="status">Checking connection...</strong>
+ <button id="disconnect" type="button" hidden>Disconnect</button>
+</div>
+<div class="panel" id="device-settings" hidden>
+ <h4>2 — Device and action</h4>
+ <label for="entityId">Device</label><select id="entityId"><option value="">Select a device</option></select>
+ <button id="refresh" type="button">Refresh devices</button>
+ <label for="service">Action</label>
+ <select id="service">
+ <option value="toggle">Toggle on/off</option>
+ <option value="turn_on">Turn on</option>
+ <option value="turn_off">Turn off</option>
+ <option value="open_cover">Open cover</option>
+ <option value="close_cover">Close cover</option>
+ <option value="stop_cover">Stop cover</option>
+ </select>
+</div>
+<p id="status" role="status" class="status"></p>
+</div>
+<script src="../../libs/js/constants.js"></script>
+<script src="../../libs/js/eventEmitter.js"></script>
+<script src="../../libs/js/timers.js"></script>
+<script src="../../libs/js/utils.js"></script>
+<script src="../../libs/js/ulanziApi.js"></script>
+<script src="./provider.js"></script>
+</body></html>
