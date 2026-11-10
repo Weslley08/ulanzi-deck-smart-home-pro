@@ -15,6 +15,7 @@ const ACTIONS=Object.freeze({
 });
 const PROVIDER_IDS=new Set(Object.values(ACTIONS));
 const sessionConnections=new Set();
+const invalidEnvironments=new Set();
 class Host extends UlanziApi {
  send(cmd,params){
   if(this.websocket?.readyState!==1)return;
@@ -39,10 +40,11 @@ async function refresh(id){
  if(!p)return;
  try{
   await p.discoverDevices();
+  invalidEnvironments.delete(id);
   sessionConnections.add(id);
   ready.add(id);
   for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
- }catch{ready.delete(id);sessionConnections.delete(id);}
+ }catch{ready.delete(id);sessionConnections.delete(id);invalidEnvironments.add(id);}
 }
 // Authentication arrives via the SDK's transient sendToPlugin channel, NEVER via
 // per-key saved settings. Secrets are process-memory-only until Studio exits.
@@ -56,6 +58,19 @@ function createProvider(id,credentials){
  });
  throw new Error('Unsupported provider');
 }
+function environmentFields(id){
+ const fields=envConfigs.find(([key])=>key===id)?.[1]||[];
+ return fields.filter(key=>typeof process.env[key]!=='string'||!process.env[key].trim());
+}
+function environmentCredentials(id){
+ if(id==='home-assistant')return {url:process.env.HA_URL||'',token:process.env.HA_TOKEN||''};
+ if(id==='smartthings')return {token:process.env.SMARTTHINGS_TOKEN||''};
+ if(id==='tuya')return {
+  clientId:process.env.TUYA_CLIENT_ID||'',secret:process.env.TUYA_CLIENT_SECRET||'',
+  userId:process.env.TUYA_USER_ID||'',region:process.env.TUYA_REGION||'us'
+ };
+ return {};
+}
 function report(ctx,id,type,extra={}){
  host.sendToPropertyInspector({type,providerId:id,...extra},ctx);
 }
@@ -66,7 +81,8 @@ async function authorize(ctx,id,credentials){
  ));
  let candidate;
  try{
-  candidate=createProvider(id,clean);
+  // Explicit input overrides existing environment values, without returning secrets to Studio.
+  candidate=createProvider(id,{...environmentCredentials(id),...Object.fromEntries(Object.entries(clean).filter(([,v])=>v.trim()))});
   const devices=await candidate.discoverDevices(); // Validate before declaring success.
   const previous=providers.get(id);
   providers.replace(id,candidate);
@@ -75,6 +91,7 @@ async function authorize(ctx,id,credentials){
   if(id==='home-assistant')candidate.connect();
   ready.add(id);
   sessionConnections.add(id);
+  invalidEnvironments.delete(id);
   for(const [key,s] of keys)if(s.providerId===id)paint(key);
   report(ctx,id,'auth-status',{connected:true,devices:filterDevices(id,devices)});
  }catch{
@@ -156,7 +173,11 @@ host.onSendToPlugin(msg=>{
  const id=ACTIONS[msg.uuid]||(msg.uuid===ACTION?payload?.providerId:null);
  if(!PROVIDER_IDS.has(id))return;
  if(payload?.type==='auth-status'){
-  report(ctx,id,'auth-status',{connected:sessionConnections.has(id),source:envConfigs.find(([p,fields])=>p===id&&fields.every(k=>process.env[k]?.trim()))?'environment':'session'});
+  report(ctx,id,'auth-status',{
+    connected:sessionConnections.has(id),
+    source:envConfigs.find(([p,fields])=>p===id&&fields.every(k=>process.env[k]?.trim()))?'environment':'session',
+    missingFields:invalidEnvironments.has(id)?(envConfigs.find(([p])=>p===id)?.[1]||[]):environmentFields(id)
+  });
   return;
  }
  if(payload?.type==='authenticate'){
