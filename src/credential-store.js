@@ -32,22 +32,22 @@ function dpapi(mode,input){
  if(Buffer.byteLength(input)>MAX_SIZE)throw new Error('Credential payload is too large');
  return new Promise((resolve,reject)=>{
   const command=Buffer.from(commands[mode],'utf16le').toString('base64');
-  const process=spawn('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',command],{
+  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-EncodedCommand',command],{
    windowsHide:true,stdio:['pipe','pipe','pipe']
   });
   let stdout='',settled=false;
-  const timer=setTimeout(()=>{process.kill();finish(new Error('Credential protection timed out'));},12000);
+  const timer=setTimeout(()=>{child.kill();finish(new Error('Credential protection timed out'));},12000);
   function finish(error,output){
    if(settled)return;settled=true;clearTimeout(timer);
    if(error)reject(error);else resolve(output);
   }
-  process.stdout.setEncoding('utf8');
+  child.stdout.setEncoding('utf8');
   process.stdout.on('data',chunk=>{stdout+=chunk;if(stdout.length>MAX_SIZE*3)process.kill();});
   // Discard diagnostic stderr; PowerShell can disclose input in error messages.
-  process.stderr.resume();
-  process.on('error',()=>finish(new Error('Windows credential protection unavailable')));
+  child.stderr.resume();
+  child.on('error',()=>finish(new Error('Windows credential protection unavailable')));
   process.on('close',code=>code===0?finish(null,stdout.trim()):finish(new Error('Windows credential protection failed')));
-  process.stdin.on('error',()=>{});
+  child.stdin.on('error',()=>{});
   process.stdin.end(input,'utf8');
  });
 }
