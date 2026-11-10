@@ -5,6 +5,7 @@ import {TuyaProvider} from './tuya-provider.js';
 import {ProviderRegistry} from './registry.js';
 import {CommandGuard,confirmState} from './control-guard.js';
 import {record} from './diagnostics.js';
+import {saveCredentials,loadCredentials,clearCredentials} from './credential-store.js';
 
 // Vendored Ulanzi SDK logs raw inbound messages, including credentials.
 for(const name of ['log','info','debug','warn','error']) console[name]=()=>{};
@@ -18,6 +19,8 @@ const ACTIONS=Object.freeze({
 const PROVIDER_IDS=new Set(Object.values(ACTIONS));
 const sessionConnections=new Set();
 const invalidEnvironments=new Set();
+const loadingCredentials=new Set();
+const persistedConnections=new Set();
 class Host extends UlanziApi {
  send(cmd,params){
   if(this.websocket?.readyState!==1)return;
@@ -86,7 +89,7 @@ function environmentCredentials(id){
 function report(ctx,id,type,extra={}){
  host.sendToPropertyInspector({type,providerId:id,...extra},ctx);
 }
-async function authorize(ctx,id,credentials){
+async function authorize(ctx,id,credentials,{remember=false,source='session'}={}){
  if(!PROVIDER_IDS.has(id)||!credentials||typeof credentials!=='object'||Array.isArray(credentials))return;
  const clean=Object.fromEntries(Object.entries(credentials).filter(([k,v])=>
   ['url','token','clientId','secret','userId','region'].includes(k)&&typeof v==='string'&&v.length<=4096
@@ -105,7 +108,25 @@ async function authorize(ctx,id,credentials){
   sessionConnections.add(id);
   invalidEnvironments.delete(id);
   for(const [key,s] of keys)if(s.providerId===id)paint(key);
-  report(ctx,id,'auth-status',{connected:true,devices:filterDevices(id,devices)});
+  let persistenceError=false;
+  if(remember){
+   try{
+    await saveCredentials(id,{...environmentCredentials(id),...Object.fromEntries(Object.entries(clean).filter(([,v])=>v.trim()))});
+    persistedConnections.add(id);
+   }catch{persistenceError=true;}
+  }else if(persistedConnections.has(id)){
+   // Switching to session-only explicitly removes old saved credentials.
+   try{
+    await clearCredentials(id);
+    persistedConnections.delete(id);
+   }catch{persistenceError=true;}
+  }
+  report(ctx,id,'auth-status',{
+   connected:true,source:remember&&!persistenceError?'protected':source,
+   persisted:persistedConnections.has(id),
+   devices:filterDevices(id,devices),
+   ...(persistenceError?{notice:'Connected, but the Windows secure store could not save credentials. Connection will not persist.'}:{})
+  });
  }catch{
   candidate?.close();
   report(ctx,id,'auth-status',{connected:sessionConnections.has(id),error:'Connection failed. Check credentials, account access and network.'});
@@ -131,6 +152,49 @@ for(const [id,needed,load] of envConfigs){
   try{register(id,createProvider(id,load()));}catch{sessionConnections.delete(id);}
  }
 }
+// Restore credentials once for the whole plugin process, not once per deck key.
+// The UI receives only connection/restore status, never the secret data.
+async function restoreProvider(id){
+ if(loadingCredentials.has(id))return;
+ loadingCredentials.add(id);
+ let problem=null;
+ try{
+  const saved=await loadCredentials(id);
+  if(!saved)return;
+  persistedConnections.add(id);
+  if(sessionConnections.has(id))return;
+  const candidate=createProvider(id,saved);
+  try{
+   await candidate.discoverDevices();
+   // Do not overwrite a newer connection installed while storage was loading.
+   if(sessionConnections.has(id)){candidate.close();return;}
+   const old=providers.get(id);
+   providers.replace(id,candidate);
+   old?.close();
+   candidate.subscribe(state=>{for(const [ctx,s]of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);});
+   if(id==='home-assistant')candidate.connect();
+   ready.add(id);sessionConnections.add(id);
+  }catch{
+   candidate.close();
+   problem='Saved authorization expired or provider unavailable. Reconnect to update it.';
+  }
+ }catch{
+  problem='Windows could not read saved credentials. Reconnect to replace them.';
+ }finally{
+  loadingCredentials.delete(id);
+  for(const [ctx,s]of keys)if(s.providerId===id){
+   paint(ctx);
+   report(ctx,id,'auth-status',{
+    connected:sessionConnections.has(id),
+    source:sessionConnections.has(id)?'protected':'session',
+    persisted:persistedConnections.has(id),
+    missingFields:environmentFields(id),
+    ...(problem?{error:problem}:{})
+   });
+  }
+ }
+}
+for(const id of PROVIDER_IDS)void restoreProvider(id);
 function normalize(raw){
  return{
   providerId:PROVIDER_IDS.has(raw?.providerId)?raw.providerId:'home-assistant',
@@ -218,15 +282,18 @@ host.onSendToPlugin(msg=>{
  const id=ACTIONS[msg.uuid]||(msg.uuid===ACTION?payload?.providerId:null);
  if(!PROVIDER_IDS.has(id))return;
  if(payload?.type==='auth-status'){
+  // A session may still be restoring a protected credential from disk.
   report(ctx,id,'auth-status',{
     connected:sessionConnections.has(id),
+    persisted:persistedConnections.has(id),
+    restoring:loadingCredentials.has(id),
     source:envConfigs.find(([p,fields])=>p===id&&fields.every(k=>process.env[k]?.trim()))?'environment':'session',
     missingFields:invalidEnvironments.has(id)?(envConfigs.find(([p])=>p===id)?.[1]||[]):environmentFields(id)
   });
   return;
  }
  if(payload?.type==='authenticate'){
-  void authorize(ctx,id,payload.credentials);
+  void authorize(ctx,id,payload.credentials,{remember:payload.remember===true});
   return;
  }
  if(payload?.type==='disconnect'){
@@ -234,6 +301,8 @@ host.onSendToPlugin(msg=>{
   providers.remove(id);
   ready.delete(id);
   sessionConnections.delete(id);
+  persistedConnections.delete(id);
+  void clearCredentials(id).catch(()=>{report(ctx,id,'auth-status',{connected:false,error:'Could not remove saved Windows credentials.'});});
   for(const [key,s]of keys)if(s.providerId===id)paint(key);
   report(ctx,id,'auth-status',{connected:false});
   return;

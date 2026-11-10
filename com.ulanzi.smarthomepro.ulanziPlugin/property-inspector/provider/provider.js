@@ -29,10 +29,10 @@ const officialPortals=Object.freeze({
  'smartthings':'https://account.smartthings.com/tokens',
  'tuya':'https://platform.tuya.com/'
 });
-const localGuides=Object.freeze({
- 'home-assistant':'./property-inspector/help/home-assistant.html',
- 'smartthings':'./property-inspector/help/smartthings.html',
- 'tuya':'./property-inspector/help/tuya.html'
+const hostedGuides=Object.freeze({
+ 'home-assistant':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/HOME_ASSISTANT.md',
+ 'smartthings':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SMARTTHINGS.md',
+ 'tuya':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TUYA_SMART_LIFE.md'
 });
 const get=id=>document.getElementById(id);
 const state={connected:false,loading:false,saved:{entityId:'',service:'toggle'}};
@@ -49,7 +49,7 @@ if(!providerId){
  get('heading').textContent='Smart Home PRO — '+names[providerId];
  const fields=get('fields');
  for(const [key,label,type,placeholder] of configs[providerId]){
-  const l=document.createElement('label');l.htmlFor='credential-'+key;l.textContent=label;fields.append(l);
+  const l=document.createElement('label');l.id='label-'+key;l.htmlFor='credential-'+key;l.textContent=label;fields.append(l);
   let input;
   if(type==='select'){
    input=document.createElement('select');
@@ -87,7 +87,7 @@ function setConnected(value,source=''){
  get('device-settings').hidden=!value;
  get('connect-settings').hidden=value;
  get('disconnect').hidden=!value;
- get('connection-status').textContent=value?'Connected'+(source==='environment'?' (environment)':' (session)'):'Not connected — enter credentials first';
+ get('connection-status').textContent=value?'Conectado'+(source==='environment'?' (ambiente)':source==='protected'?' (salvo com proteção do Windows)':' (sessão)'):'Não conectado — informe as credenciais';
  if(!value){
   get('entityId').replaceChildren(new Option('Connect to list devices',''));
  }
@@ -125,8 +125,8 @@ if(providerId){
  $UD.onParamFromApp(readSaved);
  $UD.onParamFromPlugin(readSaved);
  get('setup-guide').addEventListener('click',()=>{
-  // The SDK openUrl API accepts plugin-root-relative local HTML paths.
-  $UD.openUrl(localGuides[providerId],true);
+  // Open a stable HTTPS documentation page, not a local file:// path.
+  $UD.openUrl(hostedGuides[providerId],false);
  });
  get('official-portal').addEventListener('click',()=>{
   $UD.openUrl(officialPortals[providerId],false);
@@ -136,8 +136,8 @@ if(providerId){
   const missing=(configs[providerId]||[]).filter(([key])=>(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
   if(missing.length){status('Required: '+missing.join(', '));return;}
   status('Validating credentials and contacting provider...');
-  $UD.sendToPlugin({type:'authenticate',credentials:values});
-  clearCredentials();
+  $UD.sendToPlugin({type:'authenticate',credentials:values,remember:get('remember-credentials').checked});
+  // Keep the input until validation succeeds. Failed attempts must not erase it.
  });
  get('disconnect').addEventListener('click',()=>{$UD.sendToPlugin({type:'disconnect'});});
  get('refresh').addEventListener('click',refresh);
@@ -153,9 +153,11 @@ if(providerId){
     // sends all required fields so credentials may be replaced manually.
     showRequiredFields();
    }
+   if(p.restoring&&!p.connected){status('Restaurando conexão protegida do Windows...');return;}
    setConnected(p.connected,p.source);
    if(p.error){status(p.error);return;}
-   status(p.connected?'Connected. Choose a device.':'Enter credentials to connect.');
+   if(p.connected)clearCredentials();
+   status(p.notice|| (p.connected?'Conectado. Selecione um dispositivo.':'Informe as credenciais para conectar.'));
    if(Array.isArray(p.devices))showDevices(p.devices);
    else if(p.connected)refresh();
   }
