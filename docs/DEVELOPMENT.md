@@ -13,7 +13,7 @@ npm run build:plugin
 
 No catálogo de ações do Studio há três opções independentes:
 **Home Assistant**, **SmartThings** e **Tuya / Smart Life**.
-A ação anterior **Device Control** permanece por compatibilidade.
+A ação antiga **Device Control** foi removida do catálogo de novas ações. O runtime ainda reconhece seu identificador para reduzir impactos em perfis antigos; para configurações novas, utilize uma das três ações específicas.
 
 Ao abrir o painel, o plugin verifica se há uma sessão conectada e se existem variáveis de ambiente válidas para o provedor. Se a autenticação já foi validada, mostra a lista de dispositivos; se há dados faltando, mostra apenas os campos ausentes. Também é possível preencher credenciais diretamente no painel, sem definir variáveis no Windows. A verificação efetua descoberta real antes de marcar **Connected**.
 

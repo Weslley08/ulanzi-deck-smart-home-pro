@@ -2,14 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const text=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-test('provider actions appear independently and legacy action remains',()=>{
+test('catalog contains only provider actions with branded icons',()=>{
  const manifest=JSON.parse(text('com.ulanzi.smarthomepro.ulanziPlugin/manifest.json'));
  const uuids=manifest.Actions.map(a=>a.UUID);
- for(const suffix of ['device','home-assistant','smartthings','tuya']){
-  assert.ok(uuids.includes('com.ulanzi.smarthomepro.ulanziPlugin.'+suffix));
- }
- for(const action of manifest.Actions.filter(a=>a.UUID.endsWith('.home-assistant')||a.UUID.endsWith('.smartthings')||a.UUID.endsWith('.tuya')))
+ const providerIds=['home-assistant','smartthings','tuya'];
+ assert.equal(manifest.Actions.length,3);
+ assert.deepEqual(uuids,providerIds.map(id=>'com.ulanzi.smarthomepro.ulanziPlugin.'+id));
+ for(const [index,action] of manifest.Actions.entries()){
   assert.equal(action.PropertyInspectorPath,'property-inspector/provider/inspector.html');
+  assert.equal(action.Icon,'resources/brand-'+providerIds[index]+'.svg');
+  assert.notEqual(action.Icon,manifest.Icon);
+  const svg=text('com.ulanzi.smarthomepro.ulanziPlugin/'+action.Icon);
+  assert.match(svg,/<svg\b/);
+  assert.doesNotMatch(svg,/<script|onload=|<foreignObject/i);
+ }
 });
 test('credential fields are sent only through transient channel, not saved settings',()=>{
  const inspector=text('com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/provider/provider.js');
