@@ -7,7 +7,14 @@ import {ProviderRegistry} from './registry.js';
 // Vendored Ulanzi SDK logs raw inbound messages, including credentials.
 for(const name of ['log','info','debug','warn','error']) console[name]=()=>{};
 const ID='com.ulanzi.smarthomepro.ulanziPlugin';
-const ACTION=ID+'.device';
+const ACTION=ID+'.device'; // Existing profiles: backward compatibility
+const ACTIONS=Object.freeze({
+ [ID+'.home-assistant']:'home-assistant',
+ [ID+'.smartthings']:'smartthings',
+ [ID+'.tuya']:'tuya'
+});
+const PROVIDER_IDS=new Set(Object.values(ACTIONS));
+const sessionConnections=new Map();
 class Host extends UlanziApi {
  send(cmd,params){
   if(this.websocket?.readyState!==1)return;
@@ -25,7 +32,7 @@ function register(id,provider){
   for(const [ctx,s] of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);
  });
  if(id==='home-assistant')provider.connect();
- refresh(id);
+ void refresh(id);
 }
 async function refresh(id){
  const p=providers.get(id);
@@ -36,21 +43,51 @@ async function refresh(id){
   for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
  }catch{ready.delete(id);}
 }
-if(process.env.HA_URL&&process.env.HA_TOKEN){
- try{register('home-assistant',new HomeAssistantProvider({url:process.env.HA_URL,token:process.env.HA_TOKEN}));}catch{}
+// Authentication arrives via the SDK's transient sendToPlugin channel, NEVER via
+// per-key saved settings. Secrets are process-memory-only until Studio exits.
+// No exported profile or saved action can contain credentials.
+function createProvider(id,credentials){
+ if(id==='home-assistant')return new HomeAssistantProvider({url:credentials.url,token:credentials.token});
+ if(id==='smartthings')return new SmartThingsProvider({token:credentials.token});
+ if(id==='tuya')return new TuyaProvider({
+   clientId:credentials.clientId,secret:credentials.secret,
+   userId:credentials.userId,region:credentials.region||'us'
+ });
+ throw new Error('Unsupported provider');
 }
-if(process.env.SMARTTHINGS_TOKEN){
- try{register('smartthings',new SmartThingsProvider({token:process.env.SMARTTHINGS_TOKEN}));}catch{}
+function report(ctx,id,type,extra={}){
+ host.sendToPropertyInspector({type,providerId:id,...extra},ctx);
 }
-if(process.env.TUYA_CLIENT_ID&&process.env.TUYA_CLIENT_SECRET&&process.env.TUYA_USER_ID){
- try{register('tuya',new TuyaProvider({
-  clientId:process.env.TUYA_CLIENT_ID,secret:process.env.TUYA_CLIENT_SECRET,
-  userId:process.env.TUYA_USER_ID,region:process.env.TUYA_REGION||'us'
- }));}catch{}
+async function authorize(ctx,id,credentials){
+ if(!PROVIDER_IDS.has(id)||!credentials||typeof credentials!=='object'||Array.isArray(credentials))return;
+ const clean=Object.fromEntries(Object.entries(credentials).filter(([k,v])=>
+  ['url','token','clientId','secret','userId','region'].includes(k)&&typeof v==='string'&&v.length<=4096
+ ));
+ let candidate;
+ try{
+  candidate=createProvider(id,clean);
+  const devices=await candidate.discoverDevices(); // Validate before declaring success.
+  const previous=providers.get(id);
+  if(previous)previous.close();
+  providers.replace(id,candidate);
+  candidate.subscribe(state=>{for(const [ctx,s] of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);});
+  if(id==='home-assistant')candidate.connect();
+  ready.add(id);
+  sessionConnections.set(id,true);
+  for(const [key,s] of keys)if(s.providerId===id)paint(key);
+  report(ctx,id,'auth-status',{connected:true,devices:filterDevices(id,devices)});
+ }catch{
+  candidate?.close();
+  report(ctx,id,'auth-status',{connected:sessionConnections.has(id),error:'Connection failed. Check credentials, account access and network.'});
+ }
+}
+function filterDevices(id,devices){
+ return devices.filter(d=>id!=='home-assistant'||['light','switch','fan','cover','scene','script','input_boolean'].includes(d.domain))
+  .map(({id,name,domain})=>({id,name,domain}));
 }
 function normalize(raw){
  return{
-  providerId:['home-assistant','smartthings','tuya'].includes(raw?.providerId)?raw.providerId:'home-assistant',
+  providerId:PROVIDER_IDS.has(raw?.providerId)?raw.providerId:'home-assistant',
   entityId:typeof raw?.entityId==='string'&&/^[a-zA-Z0-9_.-]{1,128}$/.test(raw.entityId)?raw.entityId:'',
   service:['toggle','turn_on','turn_off','open_cover','close_cover','stop_cover'].includes(raw?.service)?raw.service:'toggle'
  };
@@ -64,11 +101,15 @@ function paint(ctx){
  host.setStateIcon(ctx,index,label);
 }
 function add(msg){
- if(msg.uuid!==ACTION)return;
- keys.set(msg.context,normalize(msg.param));paint(msg.context);
+ const fixed=ACTIONS[msg.uuid];
+ if(!fixed&&msg.uuid!==ACTION)return;
+ const cfg=normalize(msg.param);
+ if(fixed)cfg.providerId=fixed; // Provider cannot be changed by saved settings.
+ keys.set(msg.context,cfg);
+ paint(msg.context);
 }
 async function run(msg){
- if(msg.uuid!==ACTION)return;
+ if(!ACTIONS[msg.uuid]&&msg.uuid!==ACTION)return;
  const ctx=msg.context,s=keys.get(ctx);
  const provider=s?providers.get(s.providerId):null;
  if(!provider||!s.entityId||!ready.has(s.providerId)){host.showAlert(ctx);return;}
@@ -95,17 +136,36 @@ host.onRun(msg=>{void run(msg);});
 host.onSetActive(msg=>{if(String(msg.active)==='true')paint(msg.context);});
 host.onSendToPlugin(msg=>{
  const ctx=msg.context,payload=msg.payload;
+ const id=ACTIONS[msg.uuid]||(msg.uuid===ACTION?payload?.providerId:null);
+ if(!PROVIDER_IDS.has(id))return;
+ if(payload?.type==='auth-status'){
+  report(ctx,id,'auth-status',{connected:sessionConnections.has(id)});
+  return;
+ }
+ if(payload?.type==='authenticate'){
+  void authorize(ctx,id,payload.credentials);
+  return;
+ }
+ if(payload?.type==='disconnect'){
+  providers.get(id)?.close();
+  providers.remove(id);
+  ready.delete(id);
+  sessionConnections.delete(id);
+  for(const [key,s]of keys)if(s.providerId===id)paint(key);
+  report(ctx,id,'auth-status',{connected:false});
+  return;
+ }
  if(payload?.type!=='discover')return;
- const id=['home-assistant','smartthings','tuya'].includes(payload.providerId)?payload.providerId:'home-assistant';
  const provider=providers.get(id);
- const respond=(devices,error)=>host.sendToPropertyInspector({type:'devices',providerId:id,devices,error},ctx);
- if(!provider){respond([],'This provider is not configured in the plugin environment');return;}
+ const respond=(devices,error)=>report(ctx,id,'devices',{devices,error});
+ if(!provider||!sessionConnections.has(id)){
+  respond([],'Connect your account before refreshing devices.');return;
+ }
  provider.discoverDevices().then(devices=>{
   ready.add(id);
   for(const [key,s]of keys)if(s.providerId===id)paint(key);
-  respond(devices.filter(d=>id!=='home-assistant'||['light','switch','fan','cover','scene','script','input_boolean'].includes(d.domain))
-   .map(({id,name,domain})=>({id,name,domain})));
- }).catch(()=>{ready.delete(id);respond([],'Provider connection failed or rate limited');});
+  respond(filterDevices(id,devices));
+ }).catch(()=>{ready.delete(id);respond([],'Device discovery failed. Check connection and permissions.');});
 });
 host.onClear(msg=>{for(const item of msg.param??[])keys.delete(item.context);});
 let retry;
