@@ -29,10 +29,10 @@ const officialPortals=Object.freeze({
  'smartthings':'https://account.smartthings.com/tokens',
  'tuya':'https://platform.tuya.com/'
 });
-const localGuides=Object.freeze({
- 'home-assistant':'./property-inspector/help/home-assistant.html',
- 'smartthings':'./property-inspector/help/smartthings.html',
- 'tuya':'./property-inspector/help/tuya.html'
+const hostedGuides=Object.freeze({
+ 'home-assistant':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/HOME_ASSISTANT.md',
+ 'smartthings':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SMARTTHINGS.md',
+ 'tuya':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TUYA_SMART_LIFE.md'
 });
 const get=id=>document.getElementById(id);
 const state={connected:false,loading:false,saved:{entityId:'',service:'toggle'}};
@@ -125,8 +125,8 @@ if(providerId){
  $UD.onParamFromApp(readSaved);
  $UD.onParamFromPlugin(readSaved);
  get('setup-guide').addEventListener('click',()=>{
-  // The SDK openUrl API accepts plugin-root-relative local HTML paths.
-  $UD.openUrl(localGuides[providerId],true);
+  // Open a stable HTTPS documentation page, not a local file:// path.
+  $UD.openUrl(hostedGuides[providerId],false);
  });
  get('official-portal').addEventListener('click',()=>{
   $UD.openUrl(officialPortals[providerId],false);
