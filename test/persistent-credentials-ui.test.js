@@ -53,3 +53,27 @@ test('DPAPI streams are attached to the PowerShell child, never the host process
  assert.match(store,/child\.stdin\.end\(input/);
  assert.doesNotMatch(store,/process\.stdin\.end|process\.stdout\.on|process\.on\('close'/);
 });
+
+test('Smart Home Inspector explicitly overrides SDK default white inputs and hidden checkbox',()=>{
+ const html=read('com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/provider/inspector.html');
+ const sdk=read('com.ulanzi.smarthomepro.ulanziPlugin/libs/css/uspi.css');
+ assert.match(sdk,/input\[type="checkbox"\]/);
+ assert.match(sdk,/display:\s*none/);
+ assert.match(html,/\.credential-pref input\[type="checkbox"\]/);
+ assert.match(html,/display:block!important/);
+ assert.match(html,/appearance:auto!important/);
+ assert.match(html,/accent-color:var\(--sh-accent\)/);
+ assert.match(html,/input:not\(\[type="checkbox"\]\)/);
+ assert.match(html,/background:var\(--sh-input\)!important/);
+ assert.match(html,/color:var\(--sh-text\)!important/);
+ assert.match(html,/width:100%/);
+ assert.match(html,/overflow-x:hidden/);
+});
+test('narrow view keeps fields readable and visible, with accessible focus',()=>{
+ const html=read('com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/provider/inspector.html');
+ assert.match(html,/@media\(max-width:340px\)/);
+ assert.match(html,/\.uspi-wrapper input:focus-visible/);
+ assert.match(html,/\.uspi-wrapper \[hidden\]/);
+ assert.match(html,/id="remember-credentials"/);
+ assert.match(html,/for="remember-credentials"/);
+});
