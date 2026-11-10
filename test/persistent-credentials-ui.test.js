@@ -39,3 +39,9 @@ test('store only persists after successful provider discovery and removes on dis
  assert.match(runtime,/void clearCredentials\(id\)/);
  assert.match(runtime,/remember:payload\.remember===true/);
 });
+
+test('credential labels are addressable when provider reports missing variables',()=>{
+ const js=read('com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/provider/provider.js');
+ assert.match(js,/l\.id='label-'\+key/);
+ assert.match(js,/get\('label-'\+key\)\.hidden/);
+});
