@@ -5,6 +5,7 @@ import {TuyaProvider} from './tuya-provider.js';
 import {HueProvider} from './hue-provider.js';
 import {hueRequest} from './hue-transport.js';
 import {ShellyProvider} from './shelly-provider.js';
+import {TasmotaProvider} from './tasmota-provider.js';
 import {ProviderRegistry} from './registry.js';
 import {CommandGuard,confirmState} from './control-guard.js';
 import {record,configureStudioLogger} from './diagnostics.js';
