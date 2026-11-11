@@ -5,11 +5,13 @@ const ID='com.ulanzi.smarthomepro.ulanziPlugin';
 const byAction={
  [ID+'.home-assistant']:'home-assistant',
  [ID+'.smartthings']:'smartthings',
- [ID+'.tuya']:'tuya'
+ [ID+'.tuya']:'tuya',
+ [ID+'.hue']:'hue',
+ [ID+'.shelly']:'shelly'
 };
 const qs=new URLSearchParams(location.search);
 const providerId=byAction[qs.get('uuid')];
-const names={'home-assistant':'Home Assistant','smartthings':'SmartThings','tuya':'Tuya / Smart Life'};
+const names={'home-assistant':'Home Assistant','smartthings':'SmartThings','tuya':'Tuya / Smart Life','hue':'Philips Hue','shelly':'Shelly'};
 const configs={
  'home-assistant':[
   ['url','Home Assistant URL (HTTPS)','url','https://homeassistant.example.com'],
@@ -21,23 +23,37 @@ const configs={
   ['secret','Cloud Client Secret','password',''],
   ['userId','Linked account UID','text',''],
   ['region','Cloud region','select','us']
+ ],
+ 'hue':[
+  ['bridgeIp','Bridge private IP address','text','192.168.1.20'],
+  ['applicationKey','Hue application key (paired on Bridge)','password',''],
+  ['tlsFingerprint','Bridge certificate SHA-256 fingerprint','text','64 hex characters']
+ ],
+ 'shelly':[
+  ['ip','Shelly private IP address (Gen2+)','text','192.168.1.30'],
+  ['password','Device password (optional, Digest auth)','password','']
  ]
 };
 // Fixed, reviewed destinations only — never derive external URLs from account input.
 const officialPortals=Object.freeze({
  'home-assistant':'https://www.home-assistant.io/docs/authentication/',
  'smartthings':'https://account.smartthings.com/tokens',
- 'tuya':'https://platform.tuya.com/'
+ 'tuya':'https://platform.tuya.com/',
+ 'hue':'https://developers.meethue.com/develop/get-started-2/',
+ 'shelly':'https://shelly-api-docs.shelly.cloud/gen2/General/RPCChannels/'
 });
 const hostedGuides=Object.freeze({
  'home-assistant':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/HOME_ASSISTANT.md',
  'smartthings':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SMARTTHINGS.md',
- 'tuya':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TUYA_SMART_LIFE.md'
+ 'tuya':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TUYA_SMART_LIFE.md',
+ 'hue':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/PHILIPS_HUE.md',
+ 'shelly':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SHELLY.md'
 });
 const get=id=>document.getElementById(id);
 const state={connected:false,loading:false,saved:{entityId:'',service:'toggle'}};
 let pending=0;
 let requiredFields=null;
+const optionalCredentialFields={'shelly':new Set(['password'])};
 const envFieldNames={HA_URL:'url',HA_TOKEN:'token',SMARTTHINGS_TOKEN:'token',TUYA_CLIENT_ID:'clientId',TUYA_CLIENT_SECRET:'secret',TUYA_USER_ID:'userId',TUYA_REGION:'region'};
 function status(message){get('status').textContent=message;}
 if(!providerId){
@@ -133,7 +149,7 @@ if(providerId){
  });
  get('connect').addEventListener('click',()=>{
   const values=credentials();
-  const missing=(configs[providerId]||[]).filter(([key])=>(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
+  const missing=(configs[providerId]||[]).filter(([key])=>!(optionalCredentialFields[providerId]?.has(key))&&(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
   if(missing.length){status('Required: '+missing.join(', '));return;}
   status('Validating credentials and contacting provider...');
   $UD.sendToPlugin({type:'authenticate',credentials:values,remember:get('remember-credentials').checked});
@@ -148,7 +164,8 @@ if(providerId){
   if(!p||p.providerId!==providerId)return;
   if(p.type==='auth-status'){
    if(Array.isArray(p.missingFields)){
-    requiredFields=new Set(p.missingFields.map(x=>envFieldNames[x]).filter(Boolean));
+    const mapped=p.missingFields.map(x=>envFieldNames[x]).filter(Boolean);
+    requiredFields=mapped.length?new Set(mapped):null;
     // If all environment fields are present but validation fails, runtime
     // sends all required fields so credentials may be replaced manually.
     showRequiredFields();
