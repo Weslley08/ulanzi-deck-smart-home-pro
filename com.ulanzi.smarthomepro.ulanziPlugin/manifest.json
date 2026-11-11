@@ -1,7 +1,7 @@
 {
   "Author": "Weslley08",
   "Name": "Smart Home PRO",
-  "Description": "Control Home Assistant, SmartThings, Tuya, Hue and Shelly smart-home devices",
+  "Description": "Control Home Assistant, SmartThings, Tuya, Hue, Shelly and Tasmota devices",
   "Version": "0.1.0",
   "Category": "Smart Home",
   "UUID": "com.ulanzi.smarthomepro.ulanziPlugin",
@@ -144,6 +144,38 @@
       "Icon": "resources/brand-shelly.svg",
       "PropertyInspectorPath": "property-inspector/provider/inspector.html",
       "Tooltip": "Control Shelly Gen2+ local switch outputs",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Off",
+          "Image": "resources/off.svg"
+        },
+        {
+          "Name": "On",
+          "Image": "resources/on.svg"
+        },
+        {
+          "Name": "Offline",
+          "Image": "resources/offline.svg"
+        },
+        {
+          "Name": "Not configured",
+          "Image": "resources/offline.svg"
+        }
+      ],
+      "DisableAutomaticStates": true,
+      "SupportedInMultiActions": false,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Tasmota",
+      "UUID": "com.ulanzi.smarthomepro.ulanziPlugin.tasmota",
+      "Icon": "resources/brand-tasmota.svg",
+      "PropertyInspectorPath": "property-inspector/provider/inspector.html",
+      "Tooltip": "Control Tasmota local relay over documented HTTP commands",
       "state": 0,
       "States": [
         {
