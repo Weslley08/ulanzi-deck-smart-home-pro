@@ -2,6 +2,8 @@ import UlanziApi from './ulanzi-api/libs/ulanziApi.js';
 import {HomeAssistantProvider} from './ha-provider.js';
 import {SmartThingsProvider} from './smartthings-provider.js';
 import {TuyaProvider} from './tuya-provider.js';
+import {HueProvider} from './hue-provider.js';
+import {ShellyProvider} from './shelly-provider.js';
 import {ProviderRegistry} from './registry.js';
 import {CommandGuard,confirmState} from './control-guard.js';
 import {record,configureStudioLogger} from './diagnostics.js';
@@ -14,7 +16,9 @@ const ACTION=ID+'.device'; // Existing profiles: backward compatibility
 const ACTIONS=Object.freeze({
  [ID+'.home-assistant']:'home-assistant',
  [ID+'.smartthings']:'smartthings',
- [ID+'.tuya']:'tuya'
+ [ID+'.tuya']:'tuya',
+ [ID+'.hue']:'hue',
+ [ID+'.shelly']:'shelly'
 });
 const PROVIDER_IDS=new Set(Object.values(ACTIONS));
 const sessionConnections=new Set();
@@ -68,6 +72,8 @@ async function refresh(id){
 function createProvider(id,credentials){
  if(id==='home-assistant')return new HomeAssistantProvider({url:credentials.url,token:credentials.token});
  if(id==='smartthings')return new SmartThingsProvider({token:credentials.token});
+ if(id==='hue')return new HueProvider({bridgeIp:credentials.bridgeIp,applicationKey:credentials.applicationKey,tlsFingerprint:credentials.tlsFingerprint});
+ if(id==='shelly')return new ShellyProvider({ip:credentials.ip,password:credentials.password||''});
  if(id==='tuya')return new TuyaProvider({
    clientId:credentials.clientId,secret:credentials.secret,
    userId:credentials.userId,region:credentials.region||'us'
@@ -93,7 +99,7 @@ function report(ctx,id,type,extra={}){
 async function authorize(ctx,id,credentials,{remember=false,source='session'}={}){
  if(!PROVIDER_IDS.has(id)||!credentials||typeof credentials!=='object'||Array.isArray(credentials))return;
  const clean=Object.fromEntries(Object.entries(credentials).filter(([k,v])=>
-  ['url','token','clientId','secret','userId','region'].includes(k)&&typeof v==='string'&&v.length<=4096
+  ['url','token','clientId','secret','userId','region','bridgeIp','applicationKey','tlsFingerprint','ip','password'].includes(k)&&typeof v==='string'&&v.length<=4096
  ));
  let candidate;
  try{
