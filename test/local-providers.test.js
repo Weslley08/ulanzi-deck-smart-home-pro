@@ -34,7 +34,7 @@ test('Hue discovers lamps, sends on/off, and only updates state after subsequent
  assert.equal(hue.getState(UUID).state,'on');
  assert.equal(events.length,1);
  assert.equal(calls[1].path,'/clip/v2/resource/light/'+UUID);
- assert.throws(()=>hue.execute({entityId:'not-a-lamp',service:'turn_on'})); // sync validation
+ await assert.rejects(hue.execute({entityId:'not-a-lamp',service:'turn_on'}));
  hue.close();
 });
 
