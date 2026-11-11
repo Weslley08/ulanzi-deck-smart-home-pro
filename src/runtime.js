@@ -77,6 +77,7 @@ function createProvider(id,credentials){
  if(id==='smartthings')return new SmartThingsProvider({token:credentials.token});
  if(id==='hue')return new HueProvider({bridgeIp:credentials.bridgeIp,applicationKey:credentials.applicationKey,tlsFingerprint:credentials.tlsFingerprint});
  if(id==='shelly')return new ShellyProvider({ip:credentials.ip,password:credentials.password||''});
+ if(id==='tasmota')return new TasmotaProvider({ip:credentials.ip});
  if(id==='tuya')return new TuyaProvider({
    clientId:credentials.clientId,secret:credentials.secret,
    userId:credentials.userId,region:credentials.region||'us'
