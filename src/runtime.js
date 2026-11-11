@@ -20,7 +20,8 @@ const ACTIONS=Object.freeze({
  [ID+'.smartthings']:'smartthings',
  [ID+'.tuya']:'tuya',
  [ID+'.hue']:'hue',
- [ID+'.shelly']:'shelly'
+ [ID+'.shelly']:'shelly',
+ [ID+'.tasmota']:'tasmota'
 });
 const PROVIDER_IDS=new Set(Object.values(ACTIONS));
 const sessionConnections=new Set();
