@@ -5,7 +5,7 @@ const text=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('catalog contains only provider actions with branded icons',()=>{
  const manifest=JSON.parse(text('com.ulanzi.smarthomepro.ulanziPlugin/manifest.json'));
  const uuids=manifest.Actions.map(a=>a.UUID);
- const providerIds=['home-assistant','smartthings','tuya','hue','shelly'];
+ const providerIds=['home-assistant','smartthings','tuya','hue','shelly','tasmota'];
  assert.equal(manifest.Actions.length,providerIds.length);
  assert.deepEqual(uuids,providerIds.map(id=>'com.ulanzi.smarthomepro.ulanziPlugin.'+id));
  for(const [index,action] of manifest.Actions.entries()){
