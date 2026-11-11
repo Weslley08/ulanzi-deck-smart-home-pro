@@ -63,6 +63,7 @@ if(!providerId){
  get('connection-status').textContent='Invalid provider action';
 }else{
  get('heading').textContent='Smart Home PRO — '+names[providerId];
+ get('pair-hue').hidden=providerId!=='hue';
  const fields=get('fields');
  for(const [key,label,type,placeholder] of configs[providerId]){
   const l=document.createElement('label');l.id='label-'+key;l.htmlFor='credential-'+key;l.textContent=label;fields.append(l);
@@ -146,6 +147,14 @@ if(providerId){
  });
  get('official-portal').addEventListener('click',()=>{
   $UD.openUrl(officialPortals[providerId],false);
+ });
+ if(providerId==='hue')get('pair-hue').addEventListener('click',()=>{
+  const {bridgeIp,tlsFingerprint}=credentials();
+  if(!bridgeIp||!/^(?:[0-9a-f]{2}:?){32}$/i.test(tlsFingerprint)){
+   status('Enter the private Bridge IP and 64-digit certificate SHA-256 fingerprint first.');return;
+  }
+  status('Press the physical Hue Bridge button, then retry if needed...');
+  $UD.sendToPlugin({type:'pair',credentials:{bridgeIp,tlsFingerprint},remember:get('remember-credentials').checked});
  });
  get('connect').addEventListener('click',()=>{
   const values=credentials();
