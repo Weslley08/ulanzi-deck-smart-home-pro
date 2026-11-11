@@ -3,6 +3,7 @@ import {HomeAssistantProvider} from './ha-provider.js';
 import {SmartThingsProvider} from './smartthings-provider.js';
 import {TuyaProvider} from './tuya-provider.js';
 import {HueProvider} from './hue-provider.js';
+import {hueRequest} from './hue-transport.js';
 import {ShellyProvider} from './shelly-provider.js';
 import {ProviderRegistry} from './registry.js';
 import {CommandGuard,confirmState} from './control-guard.js';
@@ -301,6 +302,27 @@ host.onSendToPlugin(msg=>{
  }
  if(payload?.type==='authenticate'){
   void authorize(ctx,id,payload.credentials,{remember:payload.remember===true});
+  return;
+ }
+ if(payload?.type==='pair'&&id==='hue'){
+  const fields=payload.credentials;
+  if(!fields||typeof fields.bridgeIp!=='string'||typeof fields.tlsFingerprint!=='string')return;
+  void (async()=>{
+   try{
+    const reply=await hueRequest({
+     ip:fields.bridgeIp,fingerprint:fields.tlsFingerprint,
+     path:'/api',method:'POST',body:{devicetype:'ulanzi_smart_home#d200'}
+    });
+    const key=reply?.[0]?.success?.username;
+    if(typeof key!=='string'||!key)throw new Error('Pairing rejected');
+    await authorize(ctx,'hue',{
+     bridgeIp:fields.bridgeIp,tlsFingerprint:fields.tlsFingerprint,applicationKey:key
+    },{remember:payload.remember===true});
+   }catch{
+    report(ctx,'hue','auth-status',{connected:sessionConnections.has('hue'),
+     error:'Hue pairing failed. Confirm the Bridge IP and certificate fingerprint, press the physical link button and try again.'});
+   }
+  })();
   return;
  }
  if(payload?.type==='disconnect'){
