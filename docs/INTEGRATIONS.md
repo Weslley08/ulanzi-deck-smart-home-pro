@@ -10,7 +10,8 @@
 | Google Home | Pesquisa | Pendente | APIs móveis e requisitos próprios |
 | MQTT | Planejado | Pendente | Credenciais e broker seguro |
 | Matter | Pesquisa | Pendente | Controlador compatível |
-| Philips Hue | Planejado | Pendente | Bridge e chave autorizada |
+| Philips Hue | MVP local CLIP v2 (lâmpadas) | Pendente | Bridge, IP privado, botão físico, pin SHA-256 de certificado e application key protegida |\n| Shelly | MVP local RPC Gen2+ (relés) | Pendente | IP privado, HTTP Digest SHA-256 opcional, controles Switch.Set/GetStatus |
+| Tasmota | MVP local HTTP (Relay 1) | Pendente | IP privado, comandos Power1 e sem senha por query string |
 
 ## SmartThings
 
@@ -30,3 +31,13 @@ Requer projeto na Tuya Cloud, conta associada e `TUYA_CLIENT_ID`, `TUYA_CLIENT_S
 O MVP implementa assinatura HMAC-SHA256 com nonce, aquisição de token, listagem de dispositivos associados ao UID, leitura e comando booleano de funções `switch`, `switch_1` ou `switch_led`. Outras categorias, associações automáticas e eventos em tempo real estão pendentes. O endpoint legado de comandos documentado é `POST /v1.0/devices/{id}/commands`; a Tuya também documenta endpoints iot-03. A compatibilidade do projeto/conta precisa ser confirmada.
 
 A Tuya cobra e restringe uso conforme projetos e planos. Este plugin não garante nenhum plano gratuito.
+
+## Philips Hue e Shelly — MVPs locais
+
+Philips Hue: API CLIP v2 via HTTPS no IP RFC1918 da Bridge, certificado autenticado por impressão digital SHA-256 fornecida pelo usuário, pareamento pelo botão físico (`POST /api`) e comandos limitados a luzes. [Guia de configuração](setup/PHILIPS_HUE.md).
+
+Shelly: comunicação RPC local Gen2+ restrita a saídas `switch:<id>`, com suporte a HTTP Digest SHA-256 quando exigido. O protocolo HTTP não criptografa o tráfego da rede; usar apenas LAN confiável. [Guia de configuração](setup/SHELLY.md).
+
+Ambos reutilizam DPAPI CurrentUser, a API oficial de logs Ulanzi e os controles de cliques repetidos/sondagem de estado. Não houve validação com dispositivos físicos. Sem MQTT nem Matter nesta etapa.
+
+Tasmota: controle HTTP local e deliberadamente limitado a Relay 1 sem autenticação por URL. [Guia Tasmota](setup/TASMOTA.md).

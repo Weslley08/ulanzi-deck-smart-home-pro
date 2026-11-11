@@ -14,7 +14,9 @@ Plugin de automação residencial para Ulanzi D200, seguindo os padrões do [Cli
 
 Os três provedores são selecionáveis no Property Inspector. O botão representa o estado recebido ou consultado, sem presumir sucesso ao enviar o comando.
 
-**Planejados:** Xiaomi Home, Alexa, Google Home, MQTT, Matter, Philips Hue. Alguns ecossistemas têm restrições de APIs; consulte [matriz de integrações](docs/INTEGRATIONS.md).
+**Novos provedores locais no PR #20 (MVP não validado em hardware):** Philips Hue (Bridge CLIP v2), Shelly Gen2+ (RPC) e Tasmota (HTTP, Relay 1). Consulte [Hue](docs/setup/PHILIPS_HUE.md), [Shelly](docs/setup/SHELLY.md) e [Tasmota](docs/setup/TASMOTA.md) para requisitos e limitações.
+
+**Integrações ainda planejadas:** MQTT e Matter. **Xiaomi Home, Amazon Alexa e Google Home são acessíveis apenas por entidades/serviços do Home Assistant**, sem API, login ou comunicação direta do plugin (decisão documentada no PR #19). Veja a [matriz de integrações](docs/INTEGRATIONS.md).
 
 ## Desenvolvimento
 

@@ -2,6 +2,10 @@ import UlanziApi from './ulanzi-api/libs/ulanziApi.js';
 import {HomeAssistantProvider} from './ha-provider.js';
 import {SmartThingsProvider} from './smartthings-provider.js';
 import {TuyaProvider} from './tuya-provider.js';
+import {HueProvider} from './hue-provider.js';
+import {hueRequest} from './hue-transport.js';
+import {ShellyProvider} from './shelly-provider.js';
+import {TasmotaProvider} from './tasmota-provider.js';
 import {ProviderRegistry} from './registry.js';
 import {CommandGuard,confirmState} from './control-guard.js';
 import {record,configureStudioLogger} from './diagnostics.js';
@@ -14,7 +18,10 @@ const ACTION=ID+'.device'; // Existing profiles: backward compatibility
 const ACTIONS=Object.freeze({
  [ID+'.home-assistant']:'home-assistant',
  [ID+'.smartthings']:'smartthings',
- [ID+'.tuya']:'tuya'
+ [ID+'.tuya']:'tuya',
+ [ID+'.hue']:'hue',
+ [ID+'.shelly']:'shelly',
+ [ID+'.tasmota']:'tasmota'
 });
 const PROVIDER_IDS=new Set(Object.values(ACTIONS));
 const sessionConnections=new Set();
@@ -68,6 +75,9 @@ async function refresh(id){
 function createProvider(id,credentials){
  if(id==='home-assistant')return new HomeAssistantProvider({url:credentials.url,token:credentials.token});
  if(id==='smartthings')return new SmartThingsProvider({token:credentials.token});
+ if(id==='hue')return new HueProvider({bridgeIp:credentials.bridgeIp,applicationKey:credentials.applicationKey,tlsFingerprint:credentials.tlsFingerprint});
+ if(id==='shelly')return new ShellyProvider({ip:credentials.ip,password:credentials.password||''});
+ if(id==='tasmota')return new TasmotaProvider({ip:credentials.ip});
  if(id==='tuya')return new TuyaProvider({
    clientId:credentials.clientId,secret:credentials.secret,
    userId:credentials.userId,region:credentials.region||'us'
@@ -93,7 +103,7 @@ function report(ctx,id,type,extra={}){
 async function authorize(ctx,id,credentials,{remember=false,source='session'}={}){
  if(!PROVIDER_IDS.has(id)||!credentials||typeof credentials!=='object'||Array.isArray(credentials))return;
  const clean=Object.fromEntries(Object.entries(credentials).filter(([k,v])=>
-  ['url','token','clientId','secret','userId','region'].includes(k)&&typeof v==='string'&&v.length<=4096
+  ['url','token','clientId','secret','userId','region','bridgeIp','applicationKey','tlsFingerprint','ip','password'].includes(k)&&typeof v==='string'&&v.length<=4096
  ));
  let candidate;
  try{
@@ -295,6 +305,27 @@ host.onSendToPlugin(msg=>{
  }
  if(payload?.type==='authenticate'){
   void authorize(ctx,id,payload.credentials,{remember:payload.remember===true});
+  return;
+ }
+ if(payload?.type==='pair'&&id==='hue'){
+  const fields=payload.credentials;
+  if(!fields||typeof fields.bridgeIp!=='string'||typeof fields.tlsFingerprint!=='string')return;
+  void (async()=>{
+   try{
+    const reply=await hueRequest({
+     ip:fields.bridgeIp,fingerprint:fields.tlsFingerprint,
+     path:'/api',method:'POST',body:{devicetype:'ulanzi_smart_home#d200'}
+    });
+    const key=reply?.[0]?.success?.username;
+    if(typeof key!=='string'||!key)throw new Error('Pairing rejected');
+    await authorize(ctx,'hue',{
+     bridgeIp:fields.bridgeIp,tlsFingerprint:fields.tlsFingerprint,applicationKey:key
+    },{remember:payload.remember===true});
+   }catch{
+    report(ctx,'hue','auth-status',{connected:sessionConnections.has('hue'),
+     error:'Hue pairing failed. Confirm the Bridge IP and certificate fingerprint, press the physical link button and try again.'});
+   }
+  })();
   return;
  }
  if(payload?.type==='disconnect'){
