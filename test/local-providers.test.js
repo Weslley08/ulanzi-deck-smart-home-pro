@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {assertPrivateIPv4,normalizeFingerprint} from '../src/hue-transport.js';
 import {HueProvider} from '../src/hue-provider.js';
 import {ShellyProvider,createDigestHeader} from '../src/shelly-provider.js';
+import {TasmotaProvider} from '../src/tasmota-provider.js';
 const UUID='123e4567-e89b-12d3-a456-426614174000';
 const PIN='a'.repeat(64);
 
@@ -76,10 +77,37 @@ test('Shelly rejects missing password on a protected device rather than bypassin
  await assert.rejects(shelly.discoverDevices(),/authentication required/);
 });
 
-test('Studio action manifest exposes Hue and Shelly but not Xiaomi, Alexa or Google direct actions',()=>{
+test('Tasmota relay uses only allowlisted Power1 commands and confirms physical state',async()=>{
+ let physical='OFF';const calls=[];
+ const fetchImpl=async(url,options)=>{
+  calls.push({url,options});
+  const cmd=new URL(url).searchParams.get('cmnd');
+  if(cmd==='Power1 ON')physical='ON';
+  if(cmd==='Power1 OFF')physical='OFF';
+  return {ok:true,json:async()=>({POWER1:physical})};
+ };
+ const t=new TasmotaProvider({ip:'192.168.1.44',fetchImpl});
+ assert.equal((await t.discoverDevices())[0].id,'1');
+ assert.equal(t.getState('1').state,'off');
+ await t.execute({entityId:'1',service:'turn_on'});
+ assert.equal(t.getState('1').state,'off');
+ await t.refreshState('1');
+ assert.equal(t.getState('1').state,'on');
+ assert.deepEqual(calls.map(x=>new URL(x.url).searchParams.get('cmnd')),['Power1','Power1 ON','Power1']);
+ assert(calls.every(x=>x.options.redirect==='error'));
+ await assert.rejects(t.execute({entityId:'1',service:'reboot'}));
+ t.close();
+});
+test('Tasmota requires password-free local HTTP and refuses missing device state',async()=>{
+ const t=new TasmotaProvider({ip:'10.0.0.19',fetchImpl:async()=>({ok:false,status:401})});
+ await assert.rejects(t.discoverDevices(),/authentication/);
+ assert.throws(()=>new TasmotaProvider({ip:'8.8.8.8'}));
+});
+test('Studio action manifest exposes Hue, Shelly and Tasmota but not Xiaomi, Alexa or Google direct actions',()=>{
  const manifest=JSON.parse(readFileSync(new URL('../com.ulanzi.smarthomepro.ulanziPlugin/manifest.json',import.meta.url),'utf8'));
  const ids=manifest.Actions.map(a=>a.UUID);
  assert(ids.includes(manifest.UUID+'.hue'));
  assert(ids.includes(manifest.UUID+'.shelly'));
+ assert(ids.includes(manifest.UUID+'.tasmota'));
  for(const p of ['xiaomi','alexa','google'])assert(!ids.some(x=>x.endsWith('.'+p)));
 });
