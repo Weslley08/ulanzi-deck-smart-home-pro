@@ -7,11 +7,12 @@ const byAction={
  [ID+'.smartthings']:'smartthings',
  [ID+'.tuya']:'tuya',
  [ID+'.hue']:'hue',
- [ID+'.shelly']:'shelly'
+ [ID+'.shelly']:'shelly',
+ [ID+'.tasmota']:'tasmota'
 };
 const qs=new URLSearchParams(location.search);
 const providerId=byAction[qs.get('uuid')];
-const names={'home-assistant':'Home Assistant','smartthings':'SmartThings','tuya':'Tuya / Smart Life','hue':'Philips Hue','shelly':'Shelly'};
+const names={'home-assistant':'Home Assistant','smartthings':'SmartThings','tuya':'Tuya / Smart Life','hue':'Philips Hue','shelly':'Shelly','tasmota':'Tasmota'};
 const configs={
  'home-assistant':[
   ['url','Home Assistant URL (HTTPS)','url','https://homeassistant.example.com'],
@@ -32,7 +33,8 @@ const configs={
  'shelly':[
   ['ip','Shelly private IP address (Gen2+)','text','192.168.1.30'],
   ['password','Device password (optional, Digest auth)','password','']
- ]
+ ],
+ 'tasmota':[['ip','Tasmota private IP (HTTP, no password)','text','192.168.1.40']]
 };
 // Fixed, reviewed destinations only — never derive external URLs from account input.
 const officialPortals=Object.freeze({
@@ -40,14 +42,16 @@ const officialPortals=Object.freeze({
  'smartthings':'https://account.smartthings.com/tokens',
  'tuya':'https://platform.tuya.com/',
  'hue':'https://developers.meethue.com/develop/get-started-2/',
- 'shelly':'https://shelly-api-docs.shelly.cloud/gen2/General/RPCChannels/'
+ 'shelly':'https://shelly-api-docs.shelly.cloud/gen2/General/RPCChannels/',
+ 'tasmota':'https://tasmota.github.io/docs/Commands/'
 });
 const hostedGuides=Object.freeze({
  'home-assistant':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/HOME_ASSISTANT.md',
  'smartthings':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SMARTTHINGS.md',
  'tuya':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TUYA_SMART_LIFE.md',
  'hue':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/PHILIPS_HUE.md',
- 'shelly':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SHELLY.md'
+ 'shelly':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SHELLY.md',
+ 'tasmota':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TASMOTA.md'
 });
 const get=id=>document.getElementById(id);
 const state={connected:false,loading:false,saved:{entityId:'',service:'toggle'}};
