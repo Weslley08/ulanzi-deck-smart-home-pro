@@ -6,7 +6,7 @@ import {mkdir,readFile,writeFile,rm,rename} from 'node:fs/promises';
 import {join} from 'node:path';
 import {homedir} from 'node:os';
 
-const PROVIDERS=new Set(['home-assistant','smartthings','tuya','hue','shelly']);
+const PROVIDERS=new Set(['home-assistant','smartthings','tuya','hue','shelly','tasmota']);
 const root=join(process.env.LOCALAPPDATA||join(homedir(),'AppData','Local'),'Ulanzi','SmartHomePRO','credentials');
 const MAX_SIZE=16384;
 const commands={
