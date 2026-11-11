@@ -11,6 +11,7 @@
 | MQTT | Planejado | Pendente | Credenciais e broker seguro |
 | Matter | Pesquisa | Pendente | Controlador compatível |
 | Philips Hue | MVP local CLIP v2 (lâmpadas) | Pendente | Bridge, IP privado, botão físico, pin SHA-256 de certificado e application key protegida |\n| Shelly | MVP local RPC Gen2+ (relés) | Pendente | IP privado, HTTP Digest SHA-256 opcional, controles Switch.Set/GetStatus |
+| Tasmota | MVP local HTTP (Relay 1) | Pendente | IP privado, comandos Power1 e sem senha por query string |
 
 ## SmartThings
 
@@ -37,4 +38,6 @@ Philips Hue: API CLIP v2 via HTTPS no IP RFC1918 da Bridge, certificado autentic
 
 Shelly: comunicação RPC local Gen2+ restrita a saídas `switch:<id>`, com suporte a HTTP Digest SHA-256 quando exigido. O protocolo HTTP não criptografa o tráfego da rede; usar apenas LAN confiável. [Guia de configuração](setup/SHELLY.md).
 
-Ambos reutilizam DPAPI CurrentUser, a API oficial de logs Ulanzi e os controles de cliques repetidos/sondagem de estado. Não houve validação com dispositivos físicos. Sem MQTT, Matter nem Tasmota nesta etapa.
+Ambos reutilizam DPAPI CurrentUser, a API oficial de logs Ulanzi e os controles de cliques repetidos/sondagem de estado. Não houve validação com dispositivos físicos. Sem MQTT nem Matter nesta etapa.
+
+Tasmota: controle HTTP local e deliberadamente limitado a Relay 1 sem autenticação por URL. [Guia Tasmota](setup/TASMOTA.md).
