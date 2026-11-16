@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {assertPrivateIPv4,normalizeFingerprint} from '../src/hue-transport.js';
+import {X509Certificate,createHash} from 'node:crypto';
+import {assertPrivateIPv4,normalizeFingerprint,verifyHueBridgePeer} from '../src/hue-transport.js';
 import {HueProvider} from '../src/hue-provider.js';
 import {ShellyProvider,createDigestHeader} from '../src/shelly-provider.js';
 import {TasmotaProvider} from '../src/tasmota-provider.js';
@@ -15,6 +16,25 @@ test('LAN validation rejects public, loopback, hostnames and malformed IP addres
  for(const ip of ['10.0.0.1','172.16.1.2','172.31.8.9','192.168.1.1'])
   assert.equal(assertPrivateIPv4(ip),ip);
  assert.equal(normalizeFingerprint('AA:'.repeat(31)+'AA'),'aa'.repeat(32));
+});
+
+test('Hue TLS validates Signify CA certificates, requires native verification and exact leaf pin',()=>{
+ const pem=readFileSync(new URL('../src/hue-bridge-ca.pem',import.meta.url),'utf8');
+ const certs=[...pem.matchAll(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g)].map(x=>new X509Certificate(x[0]));
+ assert.equal(certs.length,2);
+ assert(certs.every(x=>x.ca));
+ assert(certs.every(x=>x.verify(x.publicKey)));
+ const leaf={raw:Buffer.from('approved Hue Bridge certificate test fixture')};
+ const fingerprint=createHash('sha256').update(leaf.raw).digest('hex');
+ assert.equal(verifyHueBridgePeer(leaf,fingerprint),undefined);
+ assert.equal(verifyHueBridgePeer(leaf,fingerprint.toUpperCase()),undefined);
+ assert.equal(verifyHueBridgePeer(leaf,PIN).code,'PIN_MISMATCH');
+ assert.equal(verifyHueBridgePeer({raw:null},fingerprint).code,'PIN_MISMATCH');
+ const transport=readFileSync(new URL('../src/hue-transport.js',import.meta.url),'utf8');
+ assert.match(transport,/rejectUnauthorized:true/);
+ assert.match(transport,/ca:hueBridgeAuthorities/);
+ assert.match(transport,/checkServerIdentity:/);
+ assert.doesNotMatch(transport,/rejectUnauthorized:\s*false/);
 });
 
 test('Hue discovers lamps, sends on/off, and only updates state after subsequent read',async()=>{
