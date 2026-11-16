@@ -16,7 +16,7 @@ Os três provedores são selecionáveis no Property Inspector. O botão represen
 
 **Home Assistant híbrido:** HTTPS/WSS permanece o padrão; HTTP/WS na LAN exige autorização explícita para endereços RFC1918 ou hostnames `.local` com validação de IP e bloqueio de DNS rebinding. A autorização pode ser salva com DPAPI no Windows. [Guia HTTPS e HTTP LAN](docs/setup/HOME_ASSISTANT.md).
 
-**Planejados:** Xiaomi Home, Alexa, Google Home, MQTT, Matter, Philips Hue. Alguns ecossistemas têm restrições de APIs; consulte [matriz de integrações](docs/INTEGRATIONS.md).
+**Planejados / em pesquisa:** MQTT, Matter e Philips Hue. **Xiaomi Home, Google Home e Amazon Alexa são acessíveis exclusivamente pelas entidades, cenas e scripts do Home Assistant**, quando suportados pelo provider HA do plugin. Não são disponibilizados login, API, controle local direto ou conexão própria para esses três ecossistemas; o plugin só executa ações pela API do Home Assistant. Consulte a [matriz de integrações](docs/INTEGRATIONS.md).
 
 ## Desenvolvimento
 
