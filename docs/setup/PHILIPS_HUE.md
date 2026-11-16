@@ -31,7 +31,8 @@ Atenção: a impressão digital lida da própria rede é um mecanismo de **confi
 - Descobre luzes em `/clip/v2/resource/light`, lê estado real e executa on/off/toggle com `PUT /clip/v2/resource/light/{id}`.
 - Faz sondagens limitadas para confirmar o estado após o comando; não assume sucesso físico a partir do HTTP 200.
 - IP **RFC1918** informado explicitamente; não há scan de rede, DNS, eventos SSE, grupos, cenas ou entretenimento nesta entrega.
-- A assinatura TLS é conferida antes que a application key seja enviada. A API v2 usa certificado que pode não ser reconhecido pelo conjunto padrão de autoridades do Node.js.
+- A cadeia TLS é validada pelas CAs da Philips Hue / Signify (raízes de 2017 e 2025), carregadas somente para esse provedor, com `rejectUnauthorized: true`. Também verificamos o fingerprint SHA-256 **exato do certificado da Bridge** antes que a application key seja transmitida. Certificados inválidos, de outras autoridades ou com fingerprint diferente são bloqueados; não há bypass de TLS.
+- As CAs específicas da Hue estão em `src/hue-bridge-ca.pem` e não são adicionadas à lista global de CAs do Node.js. A rotação do certificado da Bridge pode exigir nova verificação do fingerprint.
 - O plugin aceita conexão de somente uma Bridge por instância do provedor nesta versão. Dispositivos reais ainda exigem validação manual.
 
 Documentação oficial: https://developers.meethue.com/develop/get-started-2/ e https://developers.meethue.com/new-hue-api/
