@@ -69,18 +69,24 @@ function createProvider(id,credentials,{restoring=false}={}){
  if(id==='home-assistant'){
   if(restoring&&credentials.insecureLanConsent===true&&!credentials.approvedIp)
    throw new Error('Stored HTTP LAN authorization is incomplete');
-  return new HomeAssistantProvider({
+  let provider;
+  provider=new HomeAssistantProvider({
    url:credentials.url,token:credentials.token,
    allowInsecureLan:credentials.insecureLanConsent===true,
    ...(restoring?{approvedIp:credentials.approvedIp,approvedOrigin:credentials.approvedOrigin}:{}),
    onSecurityError:message=>{
+    // Failed validation of a replacement candidate must not disable an older,
+    // still-connected Home Assistant provider.
+    if(providers.get('home-assistant')!==provider)return;
     ready.delete('home-assistant');
+    sessionConnections.delete('home-assistant');
     for(const [ctx,s]of keys)if(s.providerId==='home-assistant'){
      paint(ctx);
      report(ctx,'home-assistant','auth-status',{connected:false,error:message});
     }
    }
   });
+  return provider;
  }
  if(id==='smartthings')return new SmartThingsProvider({token:credentials.token});
  if(id==='tuya')return new TuyaProvider({
@@ -194,9 +200,10 @@ async function restoreProvider(id){
    candidate.subscribe(state=>{for(const [ctx,s]of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);});
    if(id==='home-assistant')candidate.connect();
    ready.add(id);sessionConnections.add(id);
-  }catch{
+  }catch(error){
    candidate.close();
-   problem='Saved authorization expired or provider unavailable. Reconnect to update it.';
+   problem=error?.name==='HaPolicyError'?error.message:
+    'Saved authorization expired or provider unavailable. Reconnect to update it.';
   }
  }catch{
   problem='Windows could not read saved credentials. Reconnect to replace them.';
