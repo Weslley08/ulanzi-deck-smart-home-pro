@@ -2,6 +2,11 @@
 // SHA-256 Digest authentication is supported without passwords in URLs or logs.
 import {createHash,randomBytes} from 'node:crypto';
 import {assertPrivateIPv4} from './hue-transport.js';
+// RFC 7616 HTTP Digest challenge-response mandates SHA-256 here; this is
+// not a password-storage hash. Credentials are stored separately with DPAPI,
+// and only the per-request digest response is sent to the Shelly device.
+// CodeQL CWE-916 targets password storage, not HTTP Digest challenge-response.
+// codeql[js/insufficient-password-hash]
 const sha=s=>createHash('sha256').update(s).digest('hex');
 function digestChallenge(header){
  if(typeof header!=='string'||!/^Digest\s/i.test(header))return null;
