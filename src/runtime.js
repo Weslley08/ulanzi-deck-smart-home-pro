@@ -65,8 +65,23 @@ async function refresh(id){
 // Authentication arrives via the SDK's transient sendToPlugin channel, NEVER via
 // per-key saved settings. Secrets are process-memory-only until Studio exits.
 // No exported profile or saved action can contain credentials.
-function createProvider(id,credentials){
- if(id==='home-assistant')return new HomeAssistantProvider({url:credentials.url,token:credentials.token});
+function createProvider(id,credentials,{restoring=false}={}){
+ if(id==='home-assistant'){
+  if(restoring&&credentials.insecureLanConsent===true&&!credentials.approvedIp)
+   throw new Error('Stored HTTP LAN authorization is incomplete');
+  return new HomeAssistantProvider({
+   url:credentials.url,token:credentials.token,
+   allowInsecureLan:credentials.insecureLanConsent===true,
+   ...(restoring?{approvedIp:credentials.approvedIp,approvedOrigin:credentials.approvedOrigin}:{}),
+   onSecurityError:message=>{
+    ready.delete('home-assistant');
+    for(const [ctx,s]of keys)if(s.providerId==='home-assistant'){
+     paint(ctx);
+     report(ctx,'home-assistant','auth-status',{connected:false,error:message});
+    }
+   }
+  });
+ }
  if(id==='smartthings')return new SmartThingsProvider({token:credentials.token});
  if(id==='tuya')return new TuyaProvider({
    clientId:credentials.clientId,secret:credentials.secret,
@@ -95,10 +110,11 @@ async function authorize(ctx,id,credentials,{remember=false,source='session'}={}
  const clean=Object.fromEntries(Object.entries(credentials).filter(([k,v])=>
   ['url','token','clientId','secret','userId','region'].includes(k)&&typeof v==='string'&&v.length<=4096
  ));
+ if(id==='home-assistant'&&credentials.insecureLanConsent===true)clean.insecureLanConsent=true;
  let candidate;
  try{
   // Explicit input overrides existing environment values, without returning secrets to Studio.
-  candidate=createProvider(id,{...environmentCredentials(id),...Object.fromEntries(Object.entries(clean).filter(([,v])=>v.trim()))});
+  candidate=createProvider(id,{...environmentCredentials(id),...Object.fromEntries(Object.entries(clean).filter(([,v])=>typeof v!=='string'||v.trim()))});
   const devices=await candidate.discoverDevices(); // Validate before declaring success.
   const previous=providers.get(id);
   providers.replace(id,candidate);
@@ -112,7 +128,9 @@ async function authorize(ctx,id,credentials,{remember=false,source='session'}={}
   let persistenceError=false;
   if(remember){
    try{
-    await saveCredentials(id,{...environmentCredentials(id),...Object.fromEntries(Object.entries(clean).filter(([,v])=>v.trim()))});
+    const saved={...environmentCredentials(id),...Object.fromEntries(Object.entries(clean).filter(([,v])=>typeof v!=='string'||v.trim()))};
+    if(id==='home-assistant')Object.assign(saved,candidate.getConnectionApproval()||{});
+    await saveCredentials(id,saved);
     persistedConnections.add(id);
    }catch{persistenceError=true;}
   }else if(persistedConnections.has(id)){
@@ -128,9 +146,10 @@ async function authorize(ctx,id,credentials,{remember=false,source='session'}={}
    devices:filterDevices(id,devices),
    ...(persistenceError?{notice:'Connected, but the Windows secure store could not save credentials. Connection will not persist.'}:{})
   });
- }catch{
+ }catch(error){
   candidate?.close();
-  report(ctx,id,'auth-status',{connected:sessionConnections.has(id),error:'Connection failed. Check credentials, account access and network.'});
+  report(ctx,id,'auth-status',{connected:sessionConnections.has(id),
+   error:error?.name==='HaPolicyError'?error.message:'Connection failed. Check credentials, account access and network.'});
  }
 }
 function filterDevices(id,devices){
@@ -164,7 +183,7 @@ async function restoreProvider(id){
   if(!saved)return;
   persistedConnections.add(id);
   if(sessionConnections.has(id))return;
-  const candidate=createProvider(id,saved);
+  const candidate=createProvider(id,saved,{restoring:true});
   try{
    await candidate.discoverDevices();
    // Do not overwrite a newer connection installed while storage was loading.
