@@ -12,7 +12,7 @@ const providerId=byAction[qs.get('uuid')];
 const names={'home-assistant':'Home Assistant','smartthings':'SmartThings','tuya':'Tuya / Smart Life'};
 const configs={
  'home-assistant':[
-  ['url','Home Assistant URL (HTTPS)','url','https://homeassistant.example.com'],
+  ['url','Home Assistant URL (HTTPS or local HTTP)','url','https://homeassistant.example.com'],
   ['token','Long-lived access token','password','']
  ],
  'smartthings':[['token','SmartThings personal access token (development only)','password','']],
@@ -40,6 +40,10 @@ let pending=0;
 let requiredFields=null;
 const envFieldNames={HA_URL:'url',HA_TOKEN:'token',SMARTTHINGS_TOKEN:'token',TUYA_CLIENT_ID:'clientId',TUYA_CLIENT_SECRET:'secret',TUYA_USER_ID:'userId',TUYA_REGION:'region'};
 function status(message){get('status').textContent=message;}
+function updateHaMode(){
+ if(providerId!=='home-assistant')return;
+ get('ha-http-warning').hidden=get('ha-mode').value!=='http-lan';
+}
 if(!providerId){
  get('heading').textContent='Unsupported action';
  get('connect-settings').hidden=true;
@@ -60,6 +64,20 @@ if(!providerId){
   }
   input.id='credential-'+key;
   fields.append(input);
+ }
+ if(providerId==='home-assistant'){
+  get('ha-connection-options').hidden=false;
+  const url=get('credential-url');
+  url.addEventListener('input',()=>{
+   get('ha-insecure-consent').checked=false;
+   get('ha-mode').value=/^http:\/\//i.test(url.value.trim())?'http-lan':'https';
+   updateHaMode();
+  });
+  get('ha-mode').addEventListener('change',()=>{
+   get('ha-insecure-consent').checked=false;
+   updateHaMode();
+  });
+  updateHaMode();
  }
 }
 function showRequiredFields(){
@@ -133,13 +151,29 @@ if(providerId){
  });
  get('connect').addEventListener('click',()=>{
   const values=credentials();
+  if(providerId==='home-assistant'){
+   let parsed;
+   try{parsed=new URL(values.url);}catch{status('Informe uma URL válida do Home Assistant.');return;}
+   const isHttp=parsed.protocol==='http:';
+   const selected=get('ha-mode').value;
+   if((selected==='http-lan')!==isHttp){
+    status('O protocolo da URL não corresponde ao modo de conexão selecionado.');return;
+   }
+   const host=parsed.hostname.replace(/^\[|\]$/g,'');
+   const loopback=['localhost','127.0.0.1','::1'].includes(host);
+   const consent=get('ha-insecure-consent').checked;
+   if(isHttp&&!loopback&&!consent){
+    status('Confirme a autorização explícita para HTTP sem criptografia na LAN.');return;
+   }
+   values.insecureLanConsent=isHttp&&consent;
+  }
   const missing=(configs[providerId]||[]).filter(([key])=>(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
   if(missing.length){status('Required: '+missing.join(', '));return;}
   status('Validating credentials and contacting provider...');
   $UD.sendToPlugin({type:'authenticate',credentials:values,remember:get('remember-credentials').checked});
   // Keep the input until validation succeeds. Failed attempts must not erase it.
  });
- get('disconnect').addEventListener('click',()=>{$UD.sendToPlugin({type:'disconnect'});});
+ get('disconnect').addEventListener('click',()=>{if(providerId==='home-assistant')get('ha-insecure-consent').checked=false;$UD.sendToPlugin({type:'disconnect'});});
  get('refresh').addEventListener('click',refresh);
  get('entityId').addEventListener('change',persist);
  get('service').addEventListener('change',persist);
