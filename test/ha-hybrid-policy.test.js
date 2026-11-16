@@ -141,13 +141,26 @@ test('HTTP WebSocket resolves/pins the approved IP and never sends token to mism
  await new Promise((resolve,reject)=>socket.options.lookup('homeassistant.local',{},(err,ip,family)=>{
   try{assert.equal(err,null);assert.equal(ip,'192.168.1.40');assert.equal(family,4);resolve();}catch(e){reject(e);}
  }));
+ socket.emit('upgrade',{socket:{remoteAddress:'192.168.1.40'}});
  socket.receive({type:'auth_required'});
  assert.deepEqual(socket.sent[0],{type:'auth',access_token:'DO_NOT_LEAK'});
- socket._socket.remoteAddress='8.8.8.8';
- socket.receive({type:'auth_required'});
- assert.equal(socket.sent.length,1);
- assert.equal(errors.length,1);assert.equal(p.policyBlocked,true);
+ socket.receive({type:'auth_ok'});
+ assert.equal(socket.sent[1].type,'subscribe_events');
  p.close();
+
+ FakeSocket.sockets=[];
+ const bad=new HomeAssistantProvider({
+  url:'http://homeassistant.local:8123',token:'DO_NOT_LEAK',allowInsecureLan:true,
+  dnsLookup:policyDns,WebSocketImpl:FakeSocket,onSecurityError:s=>errors.push(s),
+  httpRequestImpl:async()=>[]
+ });
+ await bad.discoverDevices();bad.connect();await tick();
+ const badSocket=FakeSocket.sockets.at(-1);
+ badSocket.emit('upgrade',{socket:{remoteAddress:'8.8.8.8'}});
+ badSocket.receive({type:'auth_required'});
+ assert.equal(badSocket.sent.length,0);
+ assert.equal(errors.length,1);assert.equal(bad.policyBlocked,true);
+ bad.close();
 });
 test('WS reconnection revalidates DNS, blocks changed host and can be reauthorized with new provider',async()=>{
  FakeSocket.sockets=[];let ip='192.168.1.40';const errors=[];
