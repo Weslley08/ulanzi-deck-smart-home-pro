@@ -17,7 +17,7 @@ test('HTTPS remains default; localhost works; private HTTP requires explicit con
  assert.equal(validateHaUrl('http://[::1]:8123'),'http://[::1]:8123');
  for(const ip of ['192.168.1.20','10.0.0.20','172.16.0.5','172.31.0.9']){
   assert.throws(()=>validateHaUrl('http://'+ip+':8123'),HaPolicyError);
-  assert.equal(validateHaUrl('http://'+ip+':8123,allow),'http://'+ip+':8123');
+  assert.equal(validateHaUrl('http://'+ip+':8123',allow),'http://'+ip+':8123');
  }
  for(const input of [
   'http://site-publico.com','http://example.com','http://8.8.8.8:8123',
