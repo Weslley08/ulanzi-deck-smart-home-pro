@@ -122,13 +122,20 @@ export class HomeAssistantProvider {
     catch{this.scheduleReconnect();return;}
     this.ws=ws;
     const send=payload=>{if(ws.readyState===1)ws.send(JSON.stringify(payload));};
+    let verifiedPeer=!approvedIp;
+    // ws documents the upgrade event with an IncomingMessage; use the public
+    // response.socket.remoteAddress instead of private ws internals.
+    ws.on('upgrade',response=>{
+      if(!approvedIp||this.ws!==ws)return;
+      try{
+        this.policy.verifyPeer(response.socket.remoteAddress,approvedIp);
+        verifiedPeer=true;
+      }catch(error){this.blockSecurity(error);}
+    });
     ws.on('message',raw=>{
       if(this.policyBlocked||this.closed||this.ws!==ws)return;
-      // Never send the access token before confirming the actual WS peer.
-      if(approvedIp){
-        try{this.policy.verifyPeer(ws._socket?.remoteAddress,approvedIp);}
-        catch(error){this.blockSecurity(error);return;}
-      }
+      // Token must never be sent on an unverified cleartext WebSocket peer.
+      if(!verifiedPeer){this.blockSecurity(new HaPolicyError('Unverified Home Assistant WebSocket peer'));return;}
       let msg;try{msg=JSON.parse(String(raw));}catch{return;}
       if(msg.type==='auth_required')send({type:'auth',access_token:this.token});
       if(msg.type==='auth_ok'){
