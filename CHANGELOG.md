@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — revisão de segurança Hue/Shelly (PR #24)
+
+- Philips Hue: removido bypass de verificação TLS; cadeia validada pelas autoridades Signify e fingerprint SHA-256 da Bridge obrigatório.
+- Shelly: exceção restrita e documentada para o SHA-256 exigido pelo HTTP Digest RFC 7616, que não é mecanismo de armazenamento de senhas.
+- Testes adicionais de certificados e verificação do transporte; sem publicação até validação em dispositivos físicos.
+
 ## Unreleased — Home Assistant hybrid transport
 
 ### Added
