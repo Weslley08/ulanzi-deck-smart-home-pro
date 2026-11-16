@@ -13,6 +13,7 @@ A ação **Shelly** usa a API HTTP RPC documentada para dispositivos Shelly **Ge
 ## Segurança e limitações
 
 - A senha não vai em URL, parâmetro da tecla ou logs. Quando exigida, o cliente usa **HTTP Digest SHA-256**, conforme documentação Shelly, e pode salvar a configuração com DPAPI CurrentUser.
+- **CodeQL (`js/insufficient-password-hash`):** o SHA-256 é exigido pela RFC 7616 para a prova HTTP Digest e não é usado para armazenar senha. Trocar por bcrypt/scrypt/Argon2 quebraria a autenticação do dispositivo. A exceção é restrita ao cálculo do protocolo; o tráfego HTTP continua sem criptografia e não protege contra interceptação ativa na LAN.
 - RPC via HTTP na LAN **não oferece confidencialidade do tráfego**. Use somente uma rede local confiável e, se aplicável, uma VLAN separada.
 - São aceitos apenas endereços IPv4 de redes privadas RFC1918. Sem redirecionamentos, scan de portas ou endpoints arbitrários.
 - A entrega inicial cobre somente componentes `switch:<id>`, com `Switch.Set`, `Switch.GetStatus`, `Shelly.GetStatus`; sem Gen1, dimmers, coberturas ou sensores.
