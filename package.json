@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/runtime.js && node --check src/ha-provider.js && node --check src/registry.js",
+    "check": "node --check src/runtime.js && node --check src/ha-provider.js && node --check src/ha-connection-policy.js && node --check src/ha-http-transport.js && node --check com.ulanzi.smarthomepro.ulanziPlugin/property-inspector/provider/provider.js && node --check src/registry.js",
     "start": "node src/runtime.js",
     "audit": "npm audit --omit=dev",
     "build:plugin": "node scripts/build.mjs",
