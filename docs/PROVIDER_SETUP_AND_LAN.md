@@ -11,13 +11,13 @@ As ações individuais compartilham uma conexão por provedor no processo do plu
 4. **Test and connect** envia credenciais pelo canal transitório `sendToPlugin`; o runtime faz uma chamada real de descoberta para validar o acesso.
 5. Somente após validação bem-sucedida aparece **Refresh devices** e a seleção de dispositivo/ação.
 
-**Importante:** nenhuma credencial é salva nos parâmetros do botão ou em configurações globais do Studio. Credenciais digitadas ficam apenas na memória do processo e precisam ser digitadas novamente após fechar o Studio. As variáveis de ambiente existentes continuam como alternativa para desenvolvimento. Não é um armazenamento protegido permanente: não anunciar como solução pronta para produção ou distribuição até haver um cofre nativo e testes de segurança específicos.
+**Importante:** nenhuma credencial é salva nos parâmetros do botão ou em configurações globais do Studio. A opção *Lembrar credenciais* protege os segredos com DPAPI CurrentUser no Windows; desmarcada, a conexão dura apenas a sessão. As variáveis de ambiente permanecem para desenvolvimento. Para HA via HTTP LAN, a autorização e o IP aprovado ficam vinculados à URL no mesmo armazenamento protegido.
 
 Para SmartThings o PAT é **temporário para desenvolvimento**; publicação precisa de autorização de usuário via OAuth oficial. Tuya requer projeto Cloud, UID de conta vinculada e segredo; nenhum token será inferido por varredura local.
 
 ## Estratégias de rede (pesquisa, ainda não implementadas)
 
-- Home Assistant: API HTTP(S) e WebSocket na mesma rede, autenticada. A implementação atual exige HTTPS, exceto no loopback; um endereço HTTP de IP privado será rejeitado para evitar transmitir bearer token sem TLS. Estudar opção explícita de HTTP LAN apenas após definição de risco e proteção adequada, sem enfraquecer a segurança padrão.
+- Home Assistant: HTTPS/WSS é o padrão. HTTP/WS é permitido somente em loopback ou com consentimento explícito para IPv4 RFC1918 e hostnames `.local` com DNS validado e socket vinculado ao IP autorizado. O token não é criptografado por HTTP; consultar [guia](setup/HOME_ASSISTANT.md).
 - SmartThings: API pública de controle está na nuvem; hubs podem executar automações locais com Edge Drivers, o que **não equivale a uma API LAN pública de controle genérico**.
 - Tuya / Smart Life: alguns aparelhos possuem controle LAN; a compatibilidade depende do modelo e habilitação do fabricante, e a integração Tuya Cloud não fornece automaticamente controle local.
 - Matter: descoberta por DNS-SD/mDNS, mas controle exige comissionamento e certificados; encontrar o IP não basta.
