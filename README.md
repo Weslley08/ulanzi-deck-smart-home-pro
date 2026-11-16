@@ -14,6 +14,8 @@ Plugin de automação residencial para Ulanzi D200, seguindo os padrões do [Cli
 
 Os três provedores são selecionáveis no Property Inspector. O botão representa o estado recebido ou consultado, sem presumir sucesso ao enviar o comando.
 
+**Home Assistant híbrido:** HTTPS/WSS permanece o padrão; HTTP/WS na LAN exige autorização explícita para endereços RFC1918 ou hostnames `.local` com validação de IP e bloqueio de DNS rebinding. A autorização pode ser salva com DPAPI no Windows. [Guia HTTPS e HTTP LAN](docs/setup/HOME_ASSISTANT.md).
+
 **Planejados / em pesquisa:** MQTT, Matter e Philips Hue. **Xiaomi Home, Google Home e Amazon Alexa são acessíveis exclusivamente pelas entidades, cenas e scripts do Home Assistant**, quando suportados pelo provider HA do plugin. Não são disponibilizados login, API, controle local direto ou conexão própria para esses três ecossistemas; o plugin só executa ações pela API do Home Assistant. Consulte a [matriz de integrações](docs/INTEGRATIONS.md).
 
 ## Desenvolvimento
