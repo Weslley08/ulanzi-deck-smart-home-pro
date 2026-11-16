@@ -85,7 +85,10 @@ export class HaConnectionPolicy {
  lookupFor(ip){
   if(!ip||isIP(ip)===0)deny('Unverified Home Assistant connection destination');
   const family=isIP(ip);
-  return (_hostname,_options,callback)=>callback(null,ip,family);
+  return (_hostname,options,callback)=>{
+   if(options?.all)callback(null,[{address:ip,family}]);
+   else callback(null,ip,family);
+  };
  }
  verifyPeer(actual,expected){
   const normalize=value=>value?.startsWith('::ffff:')?value.slice(7):value;
