@@ -1,8 +1,9 @@
 // Philips Hue Bridge V2 HTTPS transport. Require an explicit SHA-256 certificate
-// fingerprint: Hue's Bridge certificate is not trusted by Node's default CA store.
-// Authenticate the TLS peer BEFORE sending the application key or request body.
+// fingerprint: trust Signify's documented Bridge CAs, then verify the leaf pin.
+// The native TLS handshake must verify the peer before any credentials are sent.
 import {request as httpsRequest} from 'node:https';
 import {createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {isIP} from 'node:net';
 
 export function assertPrivateIPv4(ip){
@@ -18,6 +19,24 @@ export function normalizeFingerprint(raw){
  if(!/^[a-f0-9]{64}$/.test(hex))throw new Error('Invalid SHA-256 certificate fingerprint');
  return hex;
 }
+// Public CA roots published for Hue Bridges, including the 2017 and 2025 roots.
+// TLS validates the Signify certificate chain, then checks the user's leaf pin.
+// The IP cannot be used for standard hostname verification, so we verify exact
+// leaf identity with the approved SHA-256 fingerprint instead.
+const hueBridgeAuthorities=readFileSync(new URL('./hue-bridge-ca.pem',import.meta.url),'utf8');
+export function verifyHueBridgePeer(cert,fingerprint){
+ const expected=normalizeFingerprint(fingerprint);
+ if(!Buffer.isBuffer(cert?.raw)){
+  const e=new Error('Hue Bridge TLS certificate missing');
+  e.code='PIN_MISMATCH';return e;
+ }
+ const actual=createHash('sha256').update(cert.raw).digest('hex');
+ if(actual!==expected){
+  const e=new Error('Hue Bridge TLS fingerprint does not match approved certificate');
+  e.code='PIN_MISMATCH';return e;
+ }
+ return undefined; // checkServerIdentity contract: undefined means verified
+}
 export async function hueRequest({ip,fingerprint,path,method='GET',appKey,body}){
  assertPrivateIPv4(ip);
  const pin=normalizeFingerprint(fingerprint);
@@ -28,7 +47,9 @@ export async function hueRequest({ip,fingerprint,path,method='GET',appKey,body})
   let settled=false;
   const fail=e=>{if(!settled){settled=true;reject(new Error('Hue Bridge HTTPS request failed: '+(e?.code==='PIN_MISMATCH'?'certificate fingerprint mismatch':'check bridge, authorization and network')));}};
   const req=httpsRequest({
-   hostname:ip,port:443,path,method,agent:false,rejectUnauthorized:false,
+   hostname:ip,port:443,path,method,agent:false,rejectUnauthorized:true,
+   ca:hueBridgeAuthorities,
+   checkServerIdentity:(_hostname,certificate)=>verifyHueBridgePeer(certificate,pin),
    timeout:6000,headers:{
     Accept:'application/json',
     ...(appKey?{'hue-application-key':appKey}:{}),
@@ -52,14 +73,8 @@ export async function hueRequest({ip,fingerprint,path,method='GET',appKey,body})
   });
   req.on('error',fail);
   req.on('timeout',()=>req.destroy(new Error('Hue timeout')));
-  req.on('socket',socket=>{
-   socket.once('secureConnect',()=>{
-    const cert=socket.getPeerCertificate(true);
-    const actual=cert?.raw?createHash('sha256').update(cert.raw).digest('hex'):null;
-    if(actual!==pin){const e=new Error('Certificate mismatch');e.code='PIN_MISMATCH';req.destroy(e);return;}
-    // Nothing (including the application key) goes over TLS until pinned.
-    req.end(payload??undefined);
-   });
-  });
+  // Node.js completes CA/chain and pin verification before transmitting HTTP
+  // request headers or body. No plaintext or unverified-TLS credentials are sent.
+  req.end(payload??undefined);
  });
 }
