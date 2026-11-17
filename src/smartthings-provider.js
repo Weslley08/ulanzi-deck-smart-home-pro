@@ -1,3 +1,4 @@
+import {record} from './diagnostics.js';
 // SmartThings public REST API. A short-lived PAT is permitted only for local development.
 // Production account linking must use an official OAuth API Access App with refresh tokens.
 const API = 'https://api.smartthings.com';
@@ -12,14 +13,19 @@ export class SmartThingsProvider {
   async request(path,{method='GET',body}={}) {
     if(!path.startsWith('/v1/')||path.includes('..')) throw new Error('Invalid SmartThings endpoint');
     const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),10000);
+    const started=Date.now();
     try {
       const res=await this.fetchImpl(API+path,{method,redirect:'error',signal:controller.signal,
         headers:{'Authorization':'Bearer '+this.token,'Content-Type':'application/json','Accept':'application/json'},
         ...(body===undefined?{}:{body:JSON.stringify(body)})});
       if(!res.ok) {
-        if(res.status===429) throw new Error('SmartThings rate limited; retry later');
+        if(res.status===429){
+          record('provider_rate_limited',{provider:'smartthings',httpStatus:429});
+          throw new Error('SmartThings rate limited; retry later');
+        }
         throw new Error('SmartThings API HTTP '+res.status);
       }
+      if(method==='POST')record('command_accepted',{provider:'smartthings',httpStatus:res.status,elapsedMs:Date.now()-started});
       return res.status===204?null:res.json();
     } finally {clearTimeout(timeout);}
   }

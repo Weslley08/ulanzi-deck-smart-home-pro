@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Home PRO — SmartThings</title>
+<style>
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;padding:20px;line-height:1.5;background:Canvas;color:CanvasText}
+main{max-width:700px;margin:auto}
+small{opacity:.75}h1{font-size:1.45rem}h2{font-size:1.1rem;margin-top:26px}
+ol{list-style:none;padding:0}li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid color-mix(in srgb,CanvasText 16%,transparent)}
+.num{display:inline-grid;place-items:center;background:#216ad4;color:white;min-width:26px;height:26px;border-radius:50%;font-weight:700;flex-shrink:0}
+a{color:LinkText;overflow-wrap:anywhere}
+aside{border-left:3px solid #d18b1d;padding:4px 15px;background:color-mix(in srgb,CanvasText 5%,transparent)}
+footer{font-size:.85rem;opacity:.75;margin-top:25px}
+</style></head>
+<body><main><small>Smart Home PRO • Ajuda local incluída no pacote</small>
+<h1>Conectar SmartThings</h1>
+<p>Estas instruções explicam como autorizar a integração e selecionar seus dispositivos no Ulanzi Studio.</p>
+<h2>Passo a passo</h2><ol><li><span class="num">1</span><span>Entre em account.smartthings.com/tokens com a mesma conta Samsung usada no aplicativo SmartThings.</span></li>
+<li><span class="num">2</span><span>Clique Generate new token e dê um nome como Ulanzi Smart Home PRO.</span></li>
+<li><span class="num">3</span><span>Em Authorized Scopes, permita leitura de dispositivos (r:devices:*) e execução de comandos (x:devices:*). Não é necessário conceder exclusão ou edição de cadastro.</span></li>
+<li><span class="num">4</span><span>Clique Generate Token e copie o valor imediatamente; ele não poderá ser exibido novamente.</span></li>
+<li><span class="num">5</span><span>No Ulanzi Studio, arraste a ação SmartThings para um botão, cole o token no campo indicado e clique Test and connect.</span></li>
+<li><span class="num">6</span><span>Após a confirmação, clique Refresh devices e selecione um interruptor/dispositivo compatível e a ação desejada.</span></li></ol>
+<h2>Links oficiais</h2><p><a href="https://developer.smartthings.com/docs/getting-started/authorization-and-permissions" target="_blank" rel="noopener noreferrer">Documentação oficial do provedor</a><br><a href="https://account.smartthings.com/tokens" target="_blank" rel="noopener noreferrer">Abrir página de configuração / tokens</a></p>
+<h2>Problemas comuns e segurança</h2><aside><p>Personal Access Tokens novos geralmente expiram 24 horas; o fluxo atual é somente para testes. OAuth 2.0 ainda não foi implementado no plugin.</p>
+<p>Somente dispositivos com capacidades implementadas são listados; outros podem não aparecer mesmo com permissões válidas.</p><p>Nunca compartilhe tokens, Client Secrets ou credenciais por mensagens. A versão atual mantém credenciais digitadas apenas durante a sessão; elas não são armazenadas nos perfis do Studio.</p></aside>
+<footer>Os serviços e nomes dos menus podem mudar. Consulte os links oficiais para instruções atualizadas.</footer>
+</main></body></html>

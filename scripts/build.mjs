@@ -11,5 +11,5 @@ await writeFile(join(dir,'package.json'),JSON.stringify({
  name:'smart-home-pro-runtime',version:pkg.version,type:'module',
  private:true,engines:pkg.engines,dependencies:pkg.dependencies
 },null,2)+'\n');
-execFileSync(process.platform==='win32'?'npm.cmd':'npm',['install','--omit=dev','--ignore-scripts','--no-audit'],{cwd:dir,stdio:'inherit'});
+execFileSync(process.platform==='win32'?'npm.cmd':'npm',['ci','--omit=dev','--ignore-scripts','--no-audit'],{cwd:dir,stdio:'inherit'});
 process.stdout.write('Built plugin folder: '+dir+'\n');

@@ -1,0 +1,23 @@
+{
+  "name": "Smart Home PRO",
+  "pluginFolder": "com.ulanzi.smarthomepro.ulanziPlugin",
+  "merging": "This release will become the downloadable plugin. Check physical device operation and account authorization before publishing.",
+  "validation": {
+    "steps": [
+      "Build an installable zip and validate its contents",
+      "Smoke-test the zip against a simulated Ulanzi Studio on Windows and macOS",
+      "Measure CPU and memory with simulated providers; real accounts and hardware are manual"
+    ],
+    "done": [
+      "Quality, coverage, SDK, secret scanning and dependency checks passed",
+      "The packaged plugin passed smoke checks against a fake Ulanzi Studio (not a real D200)"
+    ]
+  },
+  "notes": {
+    "install": "Download `{zip}`, not GitHub's source archive; follow the [development and setup instructions]({blob}/docs/DEVELOPMENT.md).",
+    "aboutHeading": "Integrations and limitations",
+    "about": "Home Assistant, SmartThings and Tuya integrations require provider-specific authorization. Simulated CI tests do not prove real-device interoperability. The project is independent of Ulanzi and provider vendors.",
+    "checks": "Automated tests and simulated host checks cover only the supported test cases. They do not test real accounts or hardware.",
+    "measuredAgainst": "a simulated Ulanzi host and mocked provider responses"
+  }
+}

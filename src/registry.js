@@ -8,6 +8,14 @@ export class ProviderRegistry {
     this.#providers.set(id, provider);
     return provider;
   }
+  replace(id, provider) {
+    if (!/^[a-z][a-z0-9-]*$/.test(id)) throw new Error('Invalid provider id');
+    for (const method of ['discoverDevices','getState','execute','subscribe','close'])
+      if (typeof provider?.[method] !== 'function') throw new Error('Invalid provider method: '+method);
+    this.#providers.set(id,provider);
+    return provider;
+  }
+  remove(id) { this.#providers.delete(id); }
   get(id) { return this.#providers.get(id) ?? null; }
   async close() { for(const p of this.#providers.values()) p.close(); this.#providers.clear(); }
 }

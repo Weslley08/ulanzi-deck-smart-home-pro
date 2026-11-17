@@ -1,19 +1,22 @@
 import WebSocket from 'ws';
+import {HaConnectionPolicy,HaPolicyError,isHaPolicyError,validateHaUrl} from './ha-connection-policy.js';
+import {pinnedHaHttpRequest} from './ha-http-transport.js';
+export {validateHaUrl} from './ha-connection-policy.js';
 
-// One shared provider per Home Assistant instance. Never log tokens or full URLs.
-// HTTPS/WSS is required outside explicit loopback development environments.
-export function validateHaUrl(raw) {
-  const u = new URL(raw);
-  const loopback = ['localhost', '127.0.0.1', '::1'].includes(u.hostname);
-  if (!['https:', 'http:'].includes(u.protocol) || u.username || u.password || u.search || u.hash || (u.protocol === 'http:' && !loopback)) {
-    throw new Error('Use HTTPS for Home Assistant (HTTP allowed only on loopback)');
-  }
-  if (!u.hostname || u.pathname !== '/' && u.pathname !== '') throw new Error('Use the Home Assistant server origin without a path');
-  return u.origin;
-}
+// Home Assistant provides REST and WebSocket APIs on the same origin.
 export class HomeAssistantProvider {
-  constructor({url, token, fetchImpl = fetch, WebSocketImpl = WebSocket}) {
-    this.origin = validateHaUrl(url);
+  constructor({url, token, allowInsecureLan=false, approvedIp=null, approvedOrigin=null,
+    dnsLookup, fetchImpl=fetch, httpRequestImpl=pinnedHaHttpRequest, WebSocketImpl=WebSocket,
+    onSecurityError=()=>{}}) {
+    this.policy=new HaConnectionPolicy({
+      url,allowInsecureLan,approvedIp,approvedOrigin,
+      ...(dnsLookup?{dnsLookup}:{})
+    });
+    this.origin=this.policy.origin;
+    this.httpRequestImpl=httpRequestImpl;
+    this.onSecurityError=onSecurityError;
+    this.policyBlocked=false;
+    this.connecting=false;
     if (typeof token !== 'string' || !token.trim()) throw new Error('A Home Assistant token is required');
     this.token = token.trim();
     this.fetchImpl = fetchImpl;
@@ -28,18 +31,42 @@ export class HomeAssistantProvider {
     this.retryCount = 0;
     this.authFailed = false;
   }
+  getConnectionApproval(){return this.policy.getApproval();}
+  blockSecurity(error){
+    if(this.policyBlocked)return;
+    this.policyBlocked=true;
+    const ws=this.ws;this.ws=null;
+    clearTimeout(this.timer);this.timer=null;
+    ws?.terminate?.();
+    this.onSecurityError(isHaPolicyError(error)?error.message:
+      'Home Assistant network security check failed; reconnect and authorize this server again');
+  }
   async request(path, options = {}) {
     if (!path.startsWith('/api/')) throw new Error('Invalid API path');
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
-    try {
-      const res = await this.fetchImpl(this.origin + path, {
-        ...options, redirect:'error', signal:controller.signal,
-        headers:{Authorization:'Bearer ' + this.token, 'Content-Type':'application/json'}
+    if(this.policyBlocked)throw new HaPolicyError('Home Assistant connection blocked by security policy');
+    if(this.policy.isHttp){
+      try{
+        const ip=await this.policy.resolvePeer();
+        return await this.httpRequestImpl({
+          origin:this.origin,path,ip,policy:this.policy,token:this.token,
+          method:options.method||'GET',body:options.body
+        });
+      }catch(error){
+        if(isHaPolicyError(error))this.blockSecurity(error);
+        throw error;
+      }
+    }
+    // HTTPS retains native TLS certificate validation and strict redirect denial.
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),10000);
+    try{
+      const res=await this.fetchImpl(this.origin+path,{
+        ...options,redirect:'error',signal:controller.signal,
+        headers:{Authorization:'Bearer '+this.token,'Content-Type':'application/json'}
       });
-      if (!res.ok) throw new Error('Home Assistant request failed (HTTP ' + res.status + ')');
-      return res.status === 204 ? null : res.json();
-    } finally { clearTimeout(timer); }
+      if(!res.ok)throw new Error('Home Assistant request failed (HTTP '+res.status+')');
+      return res.status===204?null:res.json();
+    }finally{clearTimeout(timer);}
   }
   async discoverDevices() {
     const states = await this.request('/api/states');
@@ -73,31 +100,65 @@ export class HomeAssistantProvider {
     for(const listener of this.listeners) { try { listener(state); } catch { /* isolate subscribers */ } }
   }
   connect() {
-    this.closed = false;
-    if (this.ws || this.authFailed) return;
-    const socketUrl = this.origin.replace(/^http/,'ws') + '/api/websocket';
-    const ws = new this.WebSocketImpl(socketUrl, {followRedirects:false});
-    this.ws = ws;
-    const send = payload => { if (ws.readyState === 1) ws.send(JSON.stringify(payload)); };
-    ws.on('message', raw => {
-      let msg; try { msg = JSON.parse(String(raw)); } catch { return; }
-      if (msg.type === 'auth_required') send({type:'auth',access_token:this.token});
-      if (msg.type === 'auth_ok') { this.retryCount=0; send({id:this.nextId++,type:'subscribe_events',event_type:'state_changed'}); }
-      if (msg.type === 'auth_invalid') { this.authFailed=true; ws.close(); }
-      if (msg.type === 'event' && msg.event?.data?.new_state) this.emit(msg.event.data.new_state);
-    });
-    ws.on('error',()=>{}); // close event drives retry; never print credentials
-    ws.on('close',()=>{
-      if(this.ws !== ws) return;
-      this.ws = null;
-      if (!this.closed && !this.authFailed) {
-        const wait=Math.min(1000*2**Math.min(this.retryCount++,5),30000);
-        this.timer=setTimeout(()=>{this.timer=null;this.connect();},wait);
-      }
+    this.closed=false;
+    if(this.ws||this.connecting||this.authFailed||this.policyBlocked)return;
+    if(!this.policy.isHttp){this.openSocket(null);return;}
+    this.connecting=true;
+    // DNS is rechecked on EVERY WS attempt including reconnections.
+    void this.policy.resolvePeer().then(ip=>{
+      this.connecting=false;
+      if(!this.closed&&!this.policyBlocked&&!this.ws)this.openSocket(ip);
+    }).catch(error=>{
+      this.connecting=false;
+      this.blockSecurity(error);
     });
   }
+  openSocket(approvedIp) {
+    const socketUrl=this.origin.replace(/^http/,'ws')+'/api/websocket';
+    const options={followRedirects:false,handshakeTimeout:10000,perMessageDeflate:false};
+    if(approvedIp)options.lookup=this.policy.lookupFor(approvedIp);
+    let ws;
+    try{ws=new this.WebSocketImpl(socketUrl,options);}
+    catch{this.scheduleReconnect();return;}
+    this.ws=ws;
+    const send=payload=>{if(ws.readyState===1)ws.send(JSON.stringify(payload));};
+    let verifiedPeer=!approvedIp;
+    // ws documents the upgrade event with an IncomingMessage; use the public
+    // response.socket.remoteAddress instead of private ws internals.
+    ws.on('upgrade',response=>{
+      if(!approvedIp||this.ws!==ws)return;
+      try{
+        this.policy.verifyPeer(response.socket.remoteAddress,approvedIp);
+        verifiedPeer=true;
+      }catch(error){this.blockSecurity(error);}
+    });
+    ws.on('message',raw=>{
+      if(this.policyBlocked||this.closed||this.ws!==ws)return;
+      // Token must never be sent on an unverified cleartext WebSocket peer.
+      if(!verifiedPeer){this.blockSecurity(new HaPolicyError('Unverified Home Assistant WebSocket peer'));return;}
+      let msg;try{msg=JSON.parse(String(raw));}catch{return;}
+      if(msg.type==='auth_required')send({type:'auth',access_token:this.token});
+      if(msg.type==='auth_ok'){
+        this.retryCount=0;
+        send({id:this.nextId++,type:'subscribe_events',event_type:'state_changed'});
+      }
+      if(msg.type==='auth_invalid'){this.authFailed=true;ws.close();}
+      if(msg.type==='event'&&msg.event?.data?.new_state)this.emit(msg.event.data.new_state);
+    });
+    ws.on('error',()=>{}); // close event drives retry; never print messages or tokens
+    ws.on('close',()=>{
+      if(this.ws!==ws)return;
+      this.ws=null;
+      this.scheduleReconnect();
+    });
+  }
+  scheduleReconnect(){
+    if(this.closed||this.authFailed||this.policyBlocked||this.timer)return;
+    const wait=Math.min(1000*2**Math.min(this.retryCount++,5),30000);
+    this.timer=setTimeout(()=>{this.timer=null;this.connect();},wait);
+  }
   close() {
-    this.closed = true; clearTimeout(this.timer); this.timer=null;
+    this.closed = true;clearTimeout(this.timer);this.timer=null;this.connecting=false;
     const ws=this.ws; this.ws=null; ws?.close();
     this.listeners.clear();
   }

@@ -1,0 +1,42 @@
+{
+  "source": "https://github.com/Weslley08/ulanzi-deck-clima-pro",
+  "notice": "SHA-1 values are Git blob hashes of copied files; update only after reviewing upstream and licenses.",
+  "files": [
+    {
+      "path": "src/ulanzi-api/libs/constants.js",
+      "sha": "08eb8d26291bc29c8b1338ff0b66e1bc73374d09"
+    },
+    {
+      "path": "src/ulanzi-api/libs/ulanziApi.js",
+      "sha": "36530eb77ba42ff9729fc89b8513ea1e9030554d"
+    },
+    {
+      "path": "src/ulanzi-api/libs/utils.js",
+      "sha": "596d46e1267478cfe99f2fdd48f0bdc1e3bce429"
+    },
+    {
+      "path": "com.ulanzi.smarthomepro.ulanziPlugin/libs/css/uspi.css",
+      "sha": "2985f61b44575a78886e5c29acd5a190d429ba56"
+    },
+    {
+      "path": "com.ulanzi.smarthomepro.ulanziPlugin/libs/js/constants.js",
+      "sha": "f3b267ce8b3d1327027274d7326b3c1009836b35"
+    },
+    {
+      "path": "com.ulanzi.smarthomepro.ulanziPlugin/libs/js/eventEmitter.js",
+      "sha": "0e807e4563feff3b25dccea0175c7c9ef56aee63"
+    },
+    {
+      "path": "com.ulanzi.smarthomepro.ulanziPlugin/libs/js/timers.js",
+      "sha": "8d10cf61a4d3813c7efb4832f312bf0c47289c7a"
+    },
+    {
+      "path": "com.ulanzi.smarthomepro.ulanziPlugin/libs/js/ulanziApi.js",
+      "sha": "e203c3e4ab012e7a25afcae6af58b19cd838e544"
+    },
+    {
+      "path": "com.ulanzi.smarthomepro.ulanziPlugin/libs/js/utils.js",
+      "sha": "8c566337a51c02456735f351317fae4a2cd4b2f6"
+    }
+  ]
+}

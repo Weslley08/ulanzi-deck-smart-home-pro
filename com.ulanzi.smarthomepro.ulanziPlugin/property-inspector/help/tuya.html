@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Home PRO — Tuya / Smart Life</title>
+<style>
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;padding:20px;line-height:1.5;background:Canvas;color:CanvasText}
+main{max-width:700px;margin:auto}
+small{opacity:.75}h1{font-size:1.45rem}h2{font-size:1.1rem;margin-top:26px}
+ol{list-style:none;padding:0}li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid color-mix(in srgb,CanvasText 16%,transparent)}
+.num{display:inline-grid;place-items:center;background:#216ad4;color:white;min-width:26px;height:26px;border-radius:50%;font-weight:700;flex-shrink:0}
+a{color:LinkText;overflow-wrap:anywhere}
+aside{border-left:3px solid #d18b1d;padding:4px 15px;background:color-mix(in srgb,CanvasText 5%,transparent)}
+footer{font-size:.85rem;opacity:.75;margin-top:25px}
+</style></head>
+<body><main><small>Smart Home PRO • Ajuda local incluída no pacote</small>
+<h1>Conectar Tuya / Smart Life</h1>
+<p>Estas instruções explicam como autorizar a integração e selecionar seus dispositivos no Ulanzi Studio.</p>
+<h2>Passo a passo</h2><ol><li><span class="num">1</span><span>Entre na Tuya Developer Platform usando a conta de desenvolvedor e crie um Cloud Project com método Smart Home.</span></li>
+<li><span class="num">2</span><span>Selecione o Data Center que corresponde à região de sua conta Smart Life/Tuya. Veja disponibilidade e custo dos serviços antes de ativá-los.</span></li>
+<li><span class="num">3</span><span>No projeto, abra Authorization Key e copie Client ID (Access ID) e Client Secret (Access Secret).</span></li>
+<li><span class="num">4</span><span>Em Devices → Link App Account → Add App Account, escolha a autorização da conta Tuya e exiba o QR Code.</span></li>
+<li><span class="num">5</span><span>Abra o app Smart Life ou Tuya Smart no celular, escaneie o QR Code e confirme a vinculação dos dispositivos.</span></li>
+<li><span class="num">6</span><span>Após vincular, encontre o UID da conta em Link App Account. Confira os dispositivos na aba All Devices.</span></li>
+<li><span class="num">7</span><span>No Studio, abra Tuya / Smart Life e informe Client ID, Client Secret, Linked account UID e Cloud region; teste a conexão e depois escolha o dispositivo.</span></li></ol>
+<h2>Links oficiais</h2><p><a href="https://developer.tuya.com/en/docs/developer/apply-cloud-api-key?id=Kff30z8sv62ah" target="_blank" rel="noopener noreferrer">Documentação oficial do provedor</a><br><a href="https://platform.tuya.com/" target="_blank" rel="noopener noreferrer">Abrir página de configuração / tokens</a></p>
+<h2>Problemas comuns e segurança</h2><aside><p>A API Cloud só retorna dispositivos autorizados no projeto e na região escolhida. Nem todos os dispositivos Tuya têm uma função switch compatível.</p>
+<p>A região escolhida deve corresponder ao projeto Cloud; o suporte atual do plugin inclui us, eu, cn e in.</p><p>Nunca compartilhe tokens, Client Secrets ou credenciais por mensagens. A versão atual mantém credenciais digitadas apenas durante a sessão; elas não são armazenadas nos perfis do Studio.</p></aside>
+<footer>Os serviços e nomes dos menus podem mudar. Consulte os links oficiais para instruções atualizadas.</footer>
+</main></body></html>
