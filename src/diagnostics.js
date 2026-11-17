@@ -32,7 +32,7 @@ function serialize(event,fields){
  }
  for(const [key,value] of Object.entries(fields||{})){
   if(!SAFE_FIELDS.has(key))continue;
-  if(key==='provider'&&['home-assistant','smartthings','tuya'].includes(value))row.provider=value;
+  if(key==='provider'&&['home-assistant','smartthings','tuya','hue','shelly','tasmota'].includes(value))row.provider=value;
   else if(key==='reason'&&['in_flight','cooldown','rate_limited'].includes(value))row.reason=value;
   else if(key==='httpStatus'&&Number.isInteger(value)&&value>=400&&value<=599)row.httpStatus=value;
   else if(['attempt','elapsedMs','delayMs'].includes(key)&&Number.isFinite(value))

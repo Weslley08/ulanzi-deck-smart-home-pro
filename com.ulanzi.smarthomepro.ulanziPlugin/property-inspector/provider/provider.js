@@ -5,14 +5,17 @@ const ID='com.ulanzi.smarthomepro.ulanziPlugin';
 const byAction={
  [ID+'.home-assistant']:'home-assistant',
  [ID+'.smartthings']:'smartthings',
- [ID+'.tuya']:'tuya'
+ [ID+'.tuya']:'tuya',
+ [ID+'.hue']:'hue',
+ [ID+'.shelly']:'shelly',
+ [ID+'.tasmota']:'tasmota'
 };
 const qs=new URLSearchParams(location.search);
 const providerId=byAction[qs.get('uuid')];
-const names={'home-assistant':'Home Assistant','smartthings':'SmartThings','tuya':'Tuya / Smart Life'};
+const names={'home-assistant':'Home Assistant','smartthings':'SmartThings','tuya':'Tuya / Smart Life','hue':'Philips Hue','shelly':'Shelly','tasmota':'Tasmota'};
 const configs={
  'home-assistant':[
-  ['url','Home Assistant URL (HTTPS)','url','https://homeassistant.example.com'],
+  ['url','Home Assistant URL (HTTPS or local HTTP)','url','https://homeassistant.example.com'],
   ['token','Long-lived access token','password','']
  ],
  'smartthings':[['token','SmartThings personal access token (development only)','password','']],
@@ -21,25 +24,46 @@ const configs={
   ['secret','Cloud Client Secret','password',''],
   ['userId','Linked account UID','text',''],
   ['region','Cloud region','select','us']
- ]
+ ],
+ 'hue':[
+  ['bridgeIp','Bridge private IP address','text','192.168.1.20'],
+  ['applicationKey','Hue application key (paired on Bridge)','password',''],
+  ['tlsFingerprint','Bridge certificate SHA-256 fingerprint','text','64 hex characters']
+ ],
+ 'shelly':[
+  ['ip','Shelly private IP address (Gen2+)','text','192.168.1.30'],
+  ['password','Device password (optional, Digest auth)','password','']
+ ],
+ 'tasmota':[['ip','Tasmota private IP (HTTP, no password)','text','192.168.1.40']]
 };
 // Fixed, reviewed destinations only — never derive external URLs from account input.
 const officialPortals=Object.freeze({
  'home-assistant':'https://www.home-assistant.io/docs/authentication/',
  'smartthings':'https://account.smartthings.com/tokens',
- 'tuya':'https://platform.tuya.com/'
+ 'tuya':'https://platform.tuya.com/',
+ 'hue':'https://developers.meethue.com/develop/get-started-2/',
+ 'shelly':'https://shelly-api-docs.shelly.cloud/gen2/General/RPCChannels/',
+ 'tasmota':'https://tasmota.github.io/docs/Commands/'
 });
 const hostedGuides=Object.freeze({
  'home-assistant':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/HOME_ASSISTANT.md',
  'smartthings':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SMARTTHINGS.md',
- 'tuya':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TUYA_SMART_LIFE.md'
+ 'tuya':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TUYA_SMART_LIFE.md',
+ 'hue':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/PHILIPS_HUE.md',
+ 'shelly':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/SHELLY.md',
+ 'tasmota':'https://github.com/Weslley08/ulanzi-deck-smart-home-pro/blob/develop/docs/setup/TASMOTA.md'
 });
 const get=id=>document.getElementById(id);
 const state={connected:false,loading:false,saved:{entityId:'',service:'toggle'}};
 let pending=0;
 let requiredFields=null;
+const optionalCredentialFields={'shelly':new Set(['password'])};
 const envFieldNames={HA_URL:'url',HA_TOKEN:'token',SMARTTHINGS_TOKEN:'token',TUYA_CLIENT_ID:'clientId',TUYA_CLIENT_SECRET:'secret',TUYA_USER_ID:'userId',TUYA_REGION:'region'};
 function status(message){get('status').textContent=message;}
+function updateHaMode(){
+ if(providerId!=='home-assistant')return;
+ get('ha-http-warning').hidden=get('ha-mode').value!=='http-lan';
+}
 if(!providerId){
  get('heading').textContent='Unsupported action';
  get('connect-settings').hidden=true;
@@ -47,6 +71,7 @@ if(!providerId){
  get('connection-status').textContent='Invalid provider action';
 }else{
  get('heading').textContent='Smart Home PRO — '+names[providerId];
+ get('pair-hue').hidden=providerId!=='hue';
  const fields=get('fields');
  for(const [key,label,type,placeholder] of configs[providerId]){
   const l=document.createElement('label');l.id='label-'+key;l.htmlFor='credential-'+key;l.textContent=label;fields.append(l);
@@ -60,6 +85,20 @@ if(!providerId){
   }
   input.id='credential-'+key;
   fields.append(input);
+ }
+ if(providerId==='home-assistant'){
+  get('ha-connection-options').hidden=false;
+  const url=get('credential-url');
+  url.addEventListener('input',()=>{
+   get('ha-insecure-consent').checked=false;
+   get('ha-mode').value=/^http:\/\//i.test(url.value.trim())?'http-lan':'https';
+   updateHaMode();
+  });
+  get('ha-mode').addEventListener('change',()=>{
+   get('ha-insecure-consent').checked=false;
+   updateHaMode();
+  });
+  updateHaMode();
  }
 }
 function showRequiredFields(){
@@ -131,15 +170,39 @@ if(providerId){
  get('official-portal').addEventListener('click',()=>{
   $UD.openUrl(officialPortals[providerId],false);
  });
+ if(providerId==='hue')get('pair-hue').addEventListener('click',()=>{
+  const {bridgeIp,tlsFingerprint}=credentials();
+  if(!bridgeIp||!/^(?:[0-9a-f]{2}:?){32}$/i.test(tlsFingerprint)){
+   status('Enter the private Bridge IP and 64-digit certificate SHA-256 fingerprint first.');return;
+  }
+  status('Press the physical Hue Bridge button, then retry if needed...');
+  $UD.sendToPlugin({type:'pair',credentials:{bridgeIp,tlsFingerprint},remember:get('remember-credentials').checked});
+ });
  get('connect').addEventListener('click',()=>{
   const values=credentials();
-  const missing=(configs[providerId]||[]).filter(([key])=>(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
+  if(providerId==='home-assistant'){
+   let parsed;
+   try{parsed=new URL(values.url);}catch{status('Informe uma URL válida do Home Assistant.');return;}
+   const isHttp=parsed.protocol==='http:';
+   const selected=get('ha-mode').value;
+   if((selected==='http-lan')!==isHttp){
+    status('O protocolo da URL não corresponde ao modo de conexão selecionado.');return;
+   }
+   const host=parsed.hostname.replace(/^\[|\]$/g,'');
+   const loopback=['localhost','127.0.0.1','::1'].includes(host);
+   const consent=get('ha-insecure-consent').checked;
+   if(isHttp&&!loopback&&!consent){
+    status('Confirme a autorização explícita para HTTP sem criptografia na LAN.');return;
+   }
+   values.insecureLanConsent=isHttp&&consent;
+  }
+  const missing=(configs[providerId]||[]).filter(([key])=>!(optionalCredentialFields[providerId]?.has(key))&&(!requiredFields||requiredFields.has(key))&&!values[key]).map(([key,label])=>label);
   if(missing.length){status('Required: '+missing.join(', '));return;}
   status('Validating credentials and contacting provider...');
   $UD.sendToPlugin({type:'authenticate',credentials:values,remember:get('remember-credentials').checked});
   // Keep the input until validation succeeds. Failed attempts must not erase it.
  });
- get('disconnect').addEventListener('click',()=>{$UD.sendToPlugin({type:'disconnect'});});
+ get('disconnect').addEventListener('click',()=>{if(providerId==='home-assistant')get('ha-insecure-consent').checked=false;$UD.sendToPlugin({type:'disconnect'});});
  get('refresh').addEventListener('click',refresh);
  get('entityId').addEventListener('change',persist);
  get('service').addEventListener('change',persist);
@@ -148,7 +211,8 @@ if(providerId){
   if(!p||p.providerId!==providerId)return;
   if(p.type==='auth-status'){
    if(Array.isArray(p.missingFields)){
-    requiredFields=new Set(p.missingFields.map(x=>envFieldNames[x]).filter(Boolean));
+    const mapped=p.missingFields.map(x=>envFieldNames[x]).filter(Boolean);
+    requiredFields=mapped.length?new Set(mapped):null;
     // If all environment fields are present but validation fails, runtime
     // sends all required fields so credentials may be replaced manually.
     showRequiredFields();

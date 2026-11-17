@@ -29,7 +29,7 @@ html,body {width:100%;min-width:0;overflow-x:hidden;color:var(--sh-text);backgro
 }
 .uspi-wrapper .note {font-size:12px;line-height:1.5;color:var(--sh-muted);margin:10px 0;opacity:1;overflow-wrap:anywhere}
 .uspi-wrapper #fields {min-width:0}
-.uspi-wrapper #fields label, .uspi-wrapper #device-settings label:not(.credential-pref) {
+.uspi-wrapper #fields label, .uspi-wrapper #ha-connection-options label:not(.credential-pref), .uspi-wrapper #device-settings label:not(.credential-pref) {
   display:block;width:auto;font-size:12px;line-height:1.45;font-weight:550;
   color:var(--sh-text);margin:12px 0 6px;overflow-wrap:anywhere;
 }
@@ -90,7 +90,22 @@ html,body {width:100%;min-width:0;overflow-x:hidden;color:var(--sh-text);backgro
  </div>
  <p class="note">O guia será aberto no GitHub pelo navegador. Requer acesso à internet; não envia suas credenciais.</p>
  <div id="fields"></div>
+ <div id="ha-connection-options" hidden>
+  <label for="ha-mode">Modo de conexão Home Assistant</label>
+  <select id="ha-mode">
+   <option value="https">HTTPS seguro (padrão)</option>
+   <option value="http-lan">HTTP na rede local (avançado)</option>
+  </select>
+  <div id="ha-http-warning" hidden>
+   <p class="note" role="alert">Atenção: HTTP/WS não criptografa seu token nem os comandos na rede. Utilize somente uma LAN confiável. Não habilite para endereços públicos.</p>
+   <label class="credential-pref" for="ha-insecure-consent">
+    <input id="ha-insecure-consent" type="checkbox">
+    <span>Autorizo explicitamente HTTP sem criptografia para este servidor local. Uma mudança de URL ou IP exigirá nova autorização.</span>
+   </label>
+  </div>
+ </div>
  <label class="credential-pref" for="remember-credentials"><input id="remember-credentials" type="checkbox" checked><span>Lembrar credenciais neste Windows <small>(protegidas para meu usuário)</small></span></label>
+ <button id="pair-hue" type="button" hidden>Pair Hue Bridge (press physical button first)</button>
  <button id="connect" type="button">Test and connect</button>
  <p class="note">Suas credenciais não entram nos perfis da Ulanzi. Com a opção acima, o Windows as protege por usuário para reconexão após reiniciar o Studio; desmarque para usar somente nesta sessão. Desconectar também apaga as credenciais salvas.</p>
 </div>
