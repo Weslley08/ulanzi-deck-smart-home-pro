@@ -24,8 +24,13 @@ function load(msg){
 }
 function syncSelected(){
  const selected=settings.entityId;
- if(selected&&![...entity.options].some(o=>o.value===selected))entity.add(new Option(selected,selected));
- entity.value=selected;
+ const available=!!selected && [...entity.options].some(o=>o.value===selected);
+ entity.value=available?selected:'';
+ if(selected&&!available) {
+  // Keep the saved setting intact but never inject an unapproved entity
+  // back into the selector. The runtime also blocks its execution.
+  status.textContent='Configured entity is no longer available or labeled Ulanzi.';
+ }
 }
 function refresh(){
  if(!connected||loading)return;
