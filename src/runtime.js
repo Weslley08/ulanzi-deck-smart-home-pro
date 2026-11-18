@@ -19,22 +19,46 @@ const host=new Host();
 const providers=new ProviderRegistry();
 const keys=new Map();
 const ready=new Set();
+const inspectors=new Map();
+const haDomains=new Set(['light','switch','fan','cover','scene','script','input_boolean']);
+function presentDevices(id,devices) {
+ return devices
+  .filter(d=>id!=='home-assistant'||haDomains.has(d.domain))
+  .map(({id,name,domain})=>({id,name,domain}));
+}
+function notifyInspectors(id,devices,error=null) {
+ for(const [ctx,providerId]of inspectors) {
+  if(providerId===id)host.sendToPropertyInspector({type:'devices',providerId:id,devices,error},ctx);
+ }
+}
 function register(id,provider){
  providers.register(id,provider);
  provider.subscribe(state=>{
   for(const [ctx,s] of keys)if(s.providerId===id&&s.entityId===state.entity_id)paint(ctx);
  });
- if(id==='home-assistant')provider.connect();
- refresh(id);
+ if(id==='home-assistant') {
+  provider.subscribeRegistry(()=>{
+   ready.delete(id);
+   for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
+   void refresh(id);
+  });
+  provider.connect();
+ }
+ void refresh(id);
 }
 async function refresh(id){
  const p=providers.get(id);
  if(!p)return;
  try{
-  await p.discoverDevices();
+  const devices=await p.discoverDevices();
   ready.add(id);
   for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
- }catch{ready.delete(id);}
+  notifyInspectors(id,presentDevices(id,devices));
+ }catch{
+  ready.delete(id);
+  for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
+  notifyInspectors(id,[],'Provider connection or entity-label lookup failed');
+ }
 }
 if(process.env.HA_URL&&process.env.HA_TOKEN){
  try{register('home-assistant',new HomeAssistantProvider({url:process.env.HA_URL,token:process.env.HA_TOKEN}));}catch{}
@@ -59,7 +83,8 @@ function paint(ctx){
  const s=keys.get(ctx);if(!s)return;
  const provider=providers.get(s.providerId);
  const state=provider?.getState(s.entityId);
- const index=!provider||!s.entityId?3:!state?2:['unavailable','unknown','offline'].includes(state.state)?2:['on','open'].includes(state.state)?1:0;
+ const forbidden=s.providerId==='home-assistant' && !provider?.isEntityAllowed(s.entityId);
+ const index=!provider||!s.entityId?3:forbidden||!state?2:['unavailable','unknown','offline'].includes(state.state)?2:['on','open'].includes(state.state)?1:0;
  const label=s.entityId?(s.entityId.includes('.')?s.entityId.split('.')[1]:s.entityId).replaceAll('_',' ').slice(0,16):'Configure';
  host.setStateIcon(ctx,index,label);
 }
@@ -71,7 +96,8 @@ async function run(msg){
  if(msg.uuid!==ACTION)return;
  const ctx=msg.context,s=keys.get(ctx);
  const provider=s?providers.get(s.providerId):null;
- if(!provider||!s.entityId||!ready.has(s.providerId)){host.showAlert(ctx);return;}
+ if(!provider||!s.entityId||!ready.has(s.providerId)||
+    (s.providerId==='home-assistant'&&!provider.isEntityAllowed(s.entityId))){host.showAlert(ctx);return;}
  const state=provider.getState(s.entityId);
  const domain=s.entityId.split('.')[0];
  let service=s.service;
@@ -97,17 +123,19 @@ host.onSendToPlugin(msg=>{
  const ctx=msg.context,payload=msg.payload;
  if(payload?.type!=='discover')return;
  const id=['home-assistant','smartthings','tuya'].includes(payload.providerId)?payload.providerId:'home-assistant';
- const provider=providers.get(id);
- const respond=(devices,error)=>host.sendToPropertyInspector({type:'devices',providerId:id,devices,error},ctx);
- if(!provider){respond([],'This provider is not configured in the plugin environment');return;}
- provider.discoverDevices().then(devices=>{
-  ready.add(id);
-  for(const [key,s]of keys)if(s.providerId===id)paint(key);
-  respond(devices.filter(d=>id!=='home-assistant'||['light','switch','fan','cover','scene','script','input_boolean'].includes(d.domain))
-   .map(({id,name,domain})=>({id,name,domain})));
- }).catch(()=>{ready.delete(id);respond([],'Provider connection failed or rate limited');});
+ inspectors.set(ctx,id);
+ if(!providers.get(id)){
+  notifyInspectors(id,[],'This provider is not configured in the plugin environment');
+  return;
+ }
+ void refresh(id);
 });
-host.onClear(msg=>{for(const item of msg.param??[])keys.delete(item.context);});
+host.onClear(msg=>{
+ for(const item of msg.param??[]){
+  keys.delete(item.context);
+  inspectors.delete(item.context);
+ }
+});
 let retry;
 host.onClose(()=>{if(!retry)retry=setTimeout(()=>{retry=null;host.reconnect();},3000);});
 host.onError(()=>{});
