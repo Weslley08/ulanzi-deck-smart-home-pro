@@ -19,6 +19,7 @@ const host=new Host();
 const providers=new ProviderRegistry();
 const keys=new Map();
 const ready=new Set();
+const refreshGenerations=new Map();
 const inspectors=new Map();
 const haDomains=new Set(['light','switch','fan','cover','scene','script','input_boolean']);
 function presentDevices(id,devices) {
@@ -49,12 +50,16 @@ function register(id,provider){
 async function refresh(id){
  const p=providers.get(id);
  if(!p)return;
+ const generation=(refreshGenerations.get(id)||0)+1;
+ refreshGenerations.set(id,generation);
  try{
   const devices=await p.discoverDevices();
+  if(refreshGenerations.get(id)!==generation)return;
   ready.add(id);
   for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
   notifyInspectors(id,presentDevices(id,devices));
  }catch{
+  if(refreshGenerations.get(id)!==generation)return;
   ready.delete(id);
   for(const [ctx,s]of keys)if(s.providerId===id)paint(ctx);
   notifyInspectors(id,[],'Provider connection or entity-label lookup failed');
