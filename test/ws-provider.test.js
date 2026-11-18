@@ -12,8 +12,10 @@ class FakeSocket extends EventEmitter {
 test('auth handshake, subscribe, confirmed event and close',()=>{
   FakeSocket.sockets=[];
   const p=new HomeAssistantProvider({url:'https://ha.example',token:'secret',WebSocketImpl:FakeSocket});
-  let state;
+  let state, registryUpdates=0;
   p.subscribe(s=>state=s.state);
+  p.subscribeRegistry(()=>registryUpdates++);
+  p.allowedEntities.add('light.desk');
   p.connect();
   const ws=FakeSocket.sockets[0];
   assert.equal(ws.url,'wss://ha.example/api/websocket');
@@ -21,10 +23,18 @@ test('auth handshake, subscribe, confirmed event and close',()=>{
   ws.receive({type:'auth_required'});
   assert.deepEqual(ws.sent[0],{type:'auth',access_token:'secret'});
   ws.receive({type:'auth_ok'});
-  assert.equal(ws.sent[1].type,'subscribe_events');
+  assert.deepEqual(ws.sent.slice(1).map(x=>x.event_type), [
+    'state_changed','entity_registry_updated','label_registry_updated'
+  ]);
   ws.receive({type:'event',event:{data:{new_state:{entity_id:'light.desk',state:'on'}}}});
   assert.equal(state,'on');
   assert.equal(p.getState('light.desk').state,'on');
+  ws.receive({type:'event',event:{event_type:'entity_registry_updated',data:{action:'update',entity_id:'light.desk'}}});
+  assert.equal(registryUpdates,1);
+  assert.equal(p.isEntityAllowed('light.desk'),false);
+  assert.equal(p.getState('light.desk'),null);
+  ws.receive({type:'event',event:{event_type:'label_registry_updated',data:{action:'remove',label_id:'ulanzi'}}});
+  assert.equal(registryUpdates,2);
   p.close();
 });
 test('auth_invalid stops automatic reconnect',()=>{
