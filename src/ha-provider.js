@@ -30,6 +30,7 @@ export class HomeAssistantProvider {
     this.allowedEntities = new Set();
     this.registryListeners = new Set();
     this.registryRevision = 0;
+    this.lookupGeneration = 0;
     this.connectedOnce = false;
   }
   async request(path, options = {}) {
@@ -50,6 +51,7 @@ export class HomeAssistantProvider {
   // before each command. If the registry is unavailable, no entity is exposed.
   async readAllowedEntities() {
     const revision = this.registryRevision;
+    const generation = ++this.lookupGeneration;
     this.allowedEntities = new Set();
     const allowed = await new Promise((resolve, reject) => {
       let socket = null;
@@ -93,7 +95,7 @@ export class HomeAssistantProvider {
         socket.on('close', () => finish(new Error('Home Assistant entity registry disconnected')));
       } catch { finish(new Error('Home Assistant entity registry connection failed')); }
     });
-    if (this.closed || revision !== this.registryRevision) {
+    if (this.closed || revision !== this.registryRevision || generation !== this.lookupGeneration) {
       throw new Error('Home Assistant entity registry changed during lookup');
     }
     this.allowedEntities = allowed;
@@ -168,7 +170,7 @@ export class HomeAssistantProvider {
         if (this.connectedOnce) this.invalidateRegistry();
         this.connectedOnce = true;
       }
-      if (msg.type === 'auth_invalid') { this.authFailed=true; ws.close(); }
+      if (msg.type === 'auth_invalid') { this.authFailed=true; this.invalidateRegistry(); ws.close(); }
       if (msg.type === 'event' && msg.event?.data?.new_state) this.emit(msg.event.data.new_state);
       if (msg.type === 'event' && ['entity_registry_updated','label_registry_updated'].includes(msg.event?.event_type)) {
         this.invalidateRegistry();
